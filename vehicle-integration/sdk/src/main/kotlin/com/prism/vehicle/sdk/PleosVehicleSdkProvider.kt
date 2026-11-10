@@ -12,8 +12,11 @@ import ai.pleos.playground.tts.constant.ErrorType
 import ai.pleos.playground.tts.constant.Mode
 import ai.pleos.playground.tts.listener.OnInitializeListener
 import ai.pleos.playground.vehicle.Vehicle
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
-import ai.pleos.playground.vehicle.listener.GearSelectionListener
+import android.car.Car
+import android.car.VehicleGear
+import android.car.VehiclePropertyIds
+import android.car.hardware.CarPropertyValue
+import android.car.hardware.property.CarPropertyManager
 import android.content.Context
 import android.util.Log
 import com.prism.vehicle.adapters.Gear
@@ -29,6 +32,8 @@ import kotlinx.coroutines.flow.update
 
 /**
  * Pleos Context Mode 용 어댑터. 읽기 전용(기어·위치·내비 상태)과 TTS 만 사용한다.
+ * 기어: Pleos Vehicle SDK 의 Gear API 는 deprecated("use the Google GEAR_SELECTION property")이고 공식 문서 도메인 표에도 없어서,
+ * Pleos 정책(AAOS 와 동일 기능은 AAOS 에 맞춤)대로 AAOS 표준 CarPropertyManager 의 GEAR_SELECTION 을 읽는다.
  * 수명주기: initialize → capability/read → register listener … unregister → release (공식 샘플 README 순서).
  * 모든 SDK 호출은 실패해도 앱을 죽이지 않고 해당 기능 상태를 FAILED 로 남긴다.
  */
@@ -38,6 +43,8 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
     override val state: StateFlow<VehicleSdkState> = _state.asStateFlow()
 
     private var vehicle: Vehicle? = null
+    private var car: Car? = null
+    private var carProperties: CarPropertyManager? = null
     private var fused: FusedLocation? = null
     private var navi: NaviHelper? = null
     private var tts: TextToSpeech? = null
@@ -52,9 +59,10 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
         mark(f, SupportStatus.FAILED, "${e.javaClass.simpleName}: ${e.message}")
 
     // 같은 인스턴스로 register/unregister 해야 한다.
-    private val gearListener = object : GearSelectionListener {
-        override fun onSelected(gear: VehicleGear?) = onGear(gear)
-        override fun onFailed(exception: Exception) = fail(SdkFeature.GEAR, exception)
+    private val gearCallback = object : CarPropertyManager.CarPropertyEventCallback {
+        override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
+        override fun onErrorEvent(propId: Int, areaId: Int) =
+            mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
     }
 
     private val locationListener = object : FusedLocationListener {
@@ -85,20 +93,27 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
     private fun startVehicle() {
         if (vehicle != null) return
         mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.PENDING)
-        val v = runCatching { Vehicle(appContext).also { it.initialize() } }
-            .onFailure { fail(SdkFeature.VEHICLE_SERVICE, it); mark(SdkFeature.GEAR, SupportStatus.FAILED, "Vehicle 세션 없음") }
-            .getOrNull() ?: return
-        vehicle = v
-        mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.CONFIRMED, "initialize() 완료")
+        runCatching { Vehicle(appContext).also { it.initialize() } }
+            .onSuccess { vehicle = it; mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.CONFIRMED, "initialize() 완료") }
+            .onFailure { fail(SdkFeature.VEHICLE_SERVICE, it) }
+        startGear()
+    }
+
+    private fun startGear() {
+        if (car != null) return
         mark(SdkFeature.GEAR, SupportStatus.PENDING)
+        // 일반 휴대폰에는 android.car 가 없어 NoClassDefFoundError 가 날 수 있다 → runCatching(Throwable) 으로 FAILED 처리
         runCatching {
-            val gear = v.getGear()
-            gear.getCurrentGearSelectionState({ onGear(it) }, { fail(SdkFeature.GEAR, it) })
-            gear.registerGearSelection(gearListener)
+            val c = Car.createCar(appContext) ?: error("Car.createCar() = null (AAOS 아님)")
+            car = c
+            val pm = c.getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager
+            carProperties = pm
+            onGear(pm.getIntProperty(VehiclePropertyIds.GEAR_SELECTION, 0))
+            pm.registerCallback(gearCallback, VehiclePropertyIds.GEAR_SELECTION, CarPropertyManager.SENSOR_RATE_ONCHANGE)
         }.onFailure { fail(SdkFeature.GEAR, it) }
     }
 
-    private fun onGear(g: VehicleGear?) {
+    private fun onGear(g: Int?) {
         val mapped = when (g) {
             VehicleGear.GEAR_PARK -> Gear.PARK
             VehicleGear.GEAR_REVERSE -> Gear.REVERSE
@@ -108,7 +123,7 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
             else -> Gear.OTHER
         }
         _state.update { it.copy(gear = mapped) }
-        mark(SdkFeature.GEAR, SupportStatus.CONFIRMED, g?.name ?: "null")
+        mark(SdkFeature.GEAR, SupportStatus.CONFIRMED, "AAOS GEAR_SELECTION=${g?.let { VehicleGear.toString(it) }}")
     }
 
     private fun startFusedLocation() {
@@ -170,10 +185,11 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
     }
 
     override fun stop() {
-        vehicle?.let { v ->
-            runCatching { v.getGear().unregisterGearSelection(gearListener) }
-            runCatching { v.release() }
-        }
+        carProperties?.let { pm -> runCatching { pm.unregisterCallback(gearCallback) } }
+        carProperties = null
+        car?.let { runCatching { it.disconnect() } }
+        car = null
+        vehicle?.let { v -> runCatching { v.release() } }
         vehicle = null
         fused?.let { f ->
             runCatching { f.unregisterFusedLocationCallback(locationListener) }

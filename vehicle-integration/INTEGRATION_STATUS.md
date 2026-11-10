@@ -14,7 +14,7 @@
 | 에뮬레이터 실행·화면 동작 | **성공** — 스크린샷 `tests/reports/screenshots/` |
 | Release APK | **미생성**. 서명 키를 저장소에 두지 않으므로 서명 없는 release 는 설치 불가. 제출·시연은 Debug APK 사용, Release 는 팀장이 서명 키로 별도 빌드 |
 
-빌드 환경: Windows 11, JDK 17 (`ms-17.0.17`), Gradle 8.13, AGP 8.7.2, Kotlin 2.0.21, compileSdk 35, minSdk 28, targetSdk 34. Gradle 은 영문 정션 경로 `C:\dev\prism` 에서 실행(README 참고).
+빌드 환경: Windows 11, JDK 17 (`ms-17.0.17`), Gradle 8.13, AGP 8.7.2, Kotlin 2.0.21, compileSdk 35, minSdk 28, targetSdk 34. 저장소 위치 `C:\dev\prism` (영문 경로, 클라우드 동기화 폴더 밖).
 
 ## 2. 실제 실행한 Android 환경
 
@@ -36,7 +36,7 @@
 | 좁은 화면(분할·휴대폰) 레이아웃 | TESTED | 폭이 부족하면 위아래 배치. `05_phone_portrait_select.png` |
 | 단일 JSON 결과 파일 | TESTED | `singleJsonFilesAreAccepted` |
 | Simulation Mode | TESTED | SDK 미호출 확인 (상태 UNTESTED 유지) |
-| Pleos Context Mode | TESTED (에뮬레이터) | 기어·위치·내비·TTS CONFIRMED (`SDK_COMPATIBILITY.md`) |
+| Pleos Context Mode | TESTED (에뮬레이터) | 기어(AAOS `GEAR_SELECTION`)·위치·내비·TTS CONFIRMED (`SDK_COMPATIBILITY.md`) |
 | ADAS Mode | 비활성 (설계대로) | 공개 SDK 없음 |
 | 라이프사이클 리소스 해제 | TESTED | 백그라운드 전환 시 logcat `released all Pleos SDK sessions` |
 | 앱 재시작 | TESTED | `am force-stop` 후 재실행, Pleos 세션 재연결 확인 |
@@ -73,7 +73,7 @@ FAIL: 없음 (JVM). UI 테스트 결과는 아래.
 | unknownScenarioShowsErrorScreen | PASS |
 | adasModeIsDisabled | PASS |
 
-Pleos 에뮬레이터 (`am instrument --user 10`, 콜드 부팅 직후): **5/7 PASS**. 실패 2개(`playAdvancesTimeAndPauses`, `riskLevelChangesDuringPlayback`)는 모두 `No compose hierarchies found` — 차량 홈(`ai.umos.homescreen`)의 TaskView 가 테스트가 띄운 Activity 를 숨겨 화면이 없는 상태. 같은 테스트가 휴대폰 AVD 에서 통과하므로 앱 로직 문제는 아닌 것으로 판단. 실패 테스트는 실행할 때마다 바뀐다(불안정).
+Pleos 에뮬레이터 (`am instrument --user 10`): **4~5/7 PASS** (2026-11-10 5/7, 2026-11-11 Mock·기어 변경 후 4/7). 실패한 테스트는 모두 `No compose hierarchies found` — 차량 홈(`ai.umos.homescreen`)의 TaskView 가 테스트가 띄운 Activity 를 숨겨 화면이 없는 상태. 같은 테스트가 휴대폰 AVD 에서 통과하므로 앱 로직 문제는 아닌 것으로 판단. 실패 테스트는 실행할 때마다 바뀐다(불안정).
 - Gradle `connectedDebugAndroidTest` 는 Pleos 에뮬레이터에서 진행되지 않음(테스트를 user 0 에 띄움). Pleos 에서는 APK 2개 설치 후 `adb shell am instrument -w -r --user 10 com.prism.vehicle.app.test/androidx.test.runner.AndroidJUnitRunner` 로 실행.
 
 UI 테스트로 찾아 고친 앱 버그 2건:
@@ -84,8 +84,8 @@ UI 테스트로 찾아 고친 앱 버그 2건:
 
 | 엔진 | 버전 | 비고 |
 |---|---|---|
-| 01 prediction | **미통합** | Mock (등속/등가속 외삽) |
-| 02 risk | **미통합** | Mock (TTC·간격 임계값 라벨) |
+| 01 prediction | **미통합** | Mock (스크립트의 실제 미래 위치를 옮겨 적음, 계산 없음) |
+| 02 risk | **미통합** | Mock (사람이 정한 시간 구간별 등급, ttc_s=null, 계산 없음) |
 | 03 simulation | **미통합** | Mock (`tests/tools/make_mock_scenarios.py`, seed 0) |
 | 04 visualization | **미통합** | PlaceholderRadar |
 | 05 vehicle-integration | `feature/vehicle` 최신 커밋 (태그 미생성) | 이 문서 |

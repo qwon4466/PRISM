@@ -6,7 +6,7 @@
       "vehicle_id": "car_01",
       "trajectories": [
         {
-          "mode": "lane_keep",
+          "mode": "mock_future_truth",
           "confidence": null,
           "points": [
             {
@@ -47,7 +47,7 @@
       "vehicle_id": "car_02",
       "trajectories": [
         {
-          "mode": "lane_keep",
+          "mode": "mock_future_truth",
           "confidence": null,
           "points": [
             {
@@ -88,7 +88,7 @@
       "vehicle_id": "car_03",
       "trajectories": [
         {
-          "mode": "lane_keep",
+          "mode": "mock_future_truth",
           "confidence": null,
           "points": [
             {
@@ -129,7 +129,7 @@
       "vehicle_id": "car_04",
       "trajectories": [
         {
-          "mode": "lane_keep",
+          "mode": "mock_future_truth",
           "confidence": null,
           "points": [
             {
@@ -170,7 +170,7 @@
       "vehicle_id": "car_05",
       "trajectories": [
         {
-          "mode": "lane_keep",
+          "mode": "mock_future_truth",
           "confidence": null,
           "points": [
             {
