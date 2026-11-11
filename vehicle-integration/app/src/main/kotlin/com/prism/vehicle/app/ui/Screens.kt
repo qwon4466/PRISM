@@ -168,7 +168,7 @@ private fun statusColor(st: SupportStatus) = when (st) {
 private fun DriveScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
-    Adaptive(560.dp, main = { RadarSlot(snap, it) }) { sideMod ->
+    Adaptive(560.dp, main = { RadarSlot(s, snap, detail = false, modifier = it) }) { sideMod ->
         // 주행 중 화면: 짧고 제한된 안내만. 세부 원인·시간 이동은 정차 후 리플레이로 분리.
         Column(sideMod.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(t.manifest.title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -217,7 +217,7 @@ private fun PlayPause(clock: ReplayClock, vm: PrismViewModel) {
 private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
-    Adaptive(640.dp, main = { RadarSlot(snap, it) }) { sideMod ->
+    Adaptive(640.dp, main = { RadarSlot(s, snap, detail = true, modifier = it) }) { sideMod ->
         Column(sideMod, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("리플레이 · ${t.manifest.title}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             LevelBanner(snap)
@@ -262,6 +262,12 @@ private fun ErrorScreen(s: UiState, vm: PrismViewModel) {
     }
 }
 
-/** 04번 UI 라이브러리 연결 지점. PrismRadarView(vehicleFrame, predictionFrame, riskFrame, mode) 로 교체 예정. */
+/** 04 visualization-engine 레이더. 차선 폭: 03 HighwayEnv 시나리오 4.0m, 05 Mock 3.6m. */
 @Composable
-private fun RadarSlot(snap: Snapshot, modifier: Modifier) = PlaceholderRadar(snap, modifier)
+private fun RadarSlot(s: UiState, snap: Snapshot, detail: Boolean, modifier: Modifier) = EngineRadar(
+    snapshot = snap,
+    nowMs = s.clock.positionMs,
+    detail = detail,
+    laneWidthM = if (s.timeline?.manifest?.mock == true) 3.6f else 4.0f,
+    modifier = modifier,
+)

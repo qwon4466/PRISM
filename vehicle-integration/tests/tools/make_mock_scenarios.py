@@ -141,7 +141,8 @@ def run(sid, title, cars, events, risk_script, cruise=None, drop_frames=(), drop
                 pts.append({"dt_ms": k * 1000, "x": r3(px), "y": r3(py), "heading_rad": r3(math.atan2(sv, svx) if (sv or svx) else math.pi / 2)})
             if pts:
                 preds.append({"vehicle_id": vid, "trajectories": [{"mode": "mock_future_truth", "confidence": None, "points": pts}]})
-        pf.append({"schema_version": "1.0", "timestamp_ms": ts, "predictions": preds})
+        if preds:  # 마지막 1초는 옮겨 적을 미래가 없다 → 빈 예측 프레임을 만들지 않는다(앱은 "예측 없음" 표시)
+            pf.append({"schema_version": "1.0", "timestamp_ms": ts, "predictions": preds})
         objs = []
         for vid in others:
             level, reasons = scripted_level(risk_script, vid, ts)
@@ -152,7 +153,8 @@ def run(sid, title, cars, events, risk_script, cruise=None, drop_frames=(), drop
                 zones = [{"dt_ms": 1000, "polygon": box(zx, zy, 2.4, states[i][vid][4] + 2.4)}]
             objs.append({"vehicle_id": vid, "risk_level": level, "reason_codes": reasons, "ttc_s": None, "risk_zones": zones})
         rf.append({"schema_version": "1.0", "timestamp_ms": ts, "risk_objects": objs})
-    manifest = {"scenario_id": sid, "title": title, "duration_ms": n * STEP_MS, "step_ms": STEP_MS, "seed": 0,
+    sid = f"mock_{sid}"  # 03 실제 시나리오와 이름이 겹치지 않게
+    manifest = {"scenario_id": sid, "title": f"[MOCK] {title}", "duration_ms": n * STEP_MS, "step_ms": STEP_MS, "seed": 0,
                 "ego_id": "ego", "event_annotation": [{"t_ms": a, "label": b} for a, b in events],
                 "provenance": PROVENANCE, "mock": True}
     write(OUT / sid, manifest, vf, pf, rf)
@@ -217,7 +219,10 @@ def main():
         drop_frames=[(4000, 5500)], drop_vehicle=("car_02", 7000, 8000)))
 
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "index.json").write_text(json.dumps([m["scenario_id"] for m, *_ in scenarios]), encoding="utf-8")
+    # index.json: 통합 파이프라인(pipeline/)이 넣은 실제 엔진 시나리오를 앞에 유지하고 mock_* 를 뒤에 붙인다
+    index = OUT / "index.json"
+    kept = [i for i in (json.loads(index.read_text(encoding="utf-8")) if index.exists() else []) if not i.startswith("mock_")]
+    index.write_text(json.dumps(kept + [m["scenario_id"] for m, *_ in scenarios]), encoding="utf-8")
     make_fixtures(scenarios[0])
     for m, vf, pf, rf in scenarios:
         levels = {}

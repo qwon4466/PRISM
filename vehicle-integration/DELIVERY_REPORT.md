@@ -20,8 +20,9 @@
 | Pleos Context Mode — Vehicle 연결·브레이크 페달(capability→읽기→리스너)·기어(AAOS)·위치·내비·TTS | DONE (에뮬레이터) | `SDK_COMPATIBILITY.md` |
 | NaviHelper 상태 이벤트 수신 | PARTIAL | 초기화 성공. 경로 안내 중이 아니라 이벤트 응답은 미수신 |
 | ADAS Mode | BLOCKED (의도적 비활성) | 공개 SDK 없음, 공식 권한 미확인 |
-| 04 UI 라이브러리 연결 | BLOCKED | 04 산출물 미도착 → `PlaceholderRadar` |
-| 01·02·03 실제 결과 통합 | BLOCKED | 산출물 미도착 → Mock 6종 |
+| 04 UI 라이브러리 연결 | DONE | 04 `RadarScreen` (모듈 포함) |
+| 03→01 실제 결과 통합 | DONE | `pipeline/`: 03 시나리오 7종 × 01 예측 847프레임 |
+| 02 위험 결과 통합 | BLOCKED | 02 는 RiskFrame 생성기가 아닌 연구 스냅샷 → 위험 정보 없이 재생, Mock(`mock_*`)만 위험 표시 |
 | Release APK / GitHub Releases | PARTIAL | Debug APK 만. 서명 키는 저장소에 두지 않음 → 팀장 서명 필요 |
 | 실차 | BLOCKED | VEHICLE-VERIFIED 아님 |
 
@@ -29,7 +30,7 @@
 
 | 구분 | 환경 | 결과 |
 |---|---|---|
-| JVM 단위·통합 (`gradlew test`) | Windows, JDK 17 | PASS 35 / FAIL 0 / SKIP 0 |
+| JVM 단위·통합 (`gradlew test`) | Windows, JDK 17 | 05: PASS 38 / FAIL 0, 04(같은 빌드): PASS 45 / FAIL 0 |
 | Compose UI (`connectedDebugAndroidTest`) | `Medium_Phone_API_36.0` (Android 16) | PASS 7 / FAIL 0 |
 | Compose UI (`am instrument --user 10`) | `Pleos_Connect_v2.1.0` (Android 14) | PASS 4~5 / FAIL 2~3 (실행마다 다름) — 차량 홈이 테스트 창을 숨기는 환경 문제 (`INTEGRATION_STATUS.md` 4절) |
 | Pleos SDK 실호출 | `Pleos_Connect_v2.1.0` | 수동 확인, `SDK_COMPATIBILITY.md` |
@@ -64,7 +65,8 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 2. 좌표는 각 프레임의 자차 기준(x 오른쪽+, y 전방+, m). 예측 점·위험 영역은 source timestamp 좌표계 고정.
 3. `risk_level` 은 NORMAL/WATCH/WARNING/UNKNOWN 외 값이면 파일 전체를 거부한다. `ttc_s`·`confidence` 는 근거 없으면 null.
 4. 공통 `contracts/` JSON Schema 가 아직 없어 지시서 02장 예시로 DTO 를 만들었다(`replay/src/main/kotlin/.../Contracts.kt`). Schema 가 나오면 대조 필요.
-5. 04 UI 는 `app/.../ui/Screens.kt` 의 `RadarSlot` 한 곳에서 교체.
+5. 04 UI: `app/.../ui/EngineRadar.kt` 가 05 프레임을 JSON 으로 04 `ContractJson` 에 넘겨 `RadarScreen` 을 그린다. 01 과의 계약 불일치 2건은 `INTEGRATION_STATUS.md` "엔진 간 통합 결과" 참고.
+9. 엔진 결과 갱신: `.\gradlew.bat :pipeline:run` (03 samples → 01 → assets, 보고서 `tests/reports/pipeline-report.txt`).
 6. Mock 은 예측·위험을 계산하지 않는다(실제 미래 위치 복사, 사람이 정한 구간 등급, ttc_s=null). 05번 역할 경계.
 7. 권한: Pleos 앱 심사는 승인된 권한만 허용. 현재 선언 `CAR_POWERTRAIN`(AAOS), `CAR_DRIVE`(브레이크), `FUSED_LOCATION`, `NAVI_ROUTE`, `TTS_SERVICE` — 심사 전 승인 확인.
 8. Pleos 에뮬레이터 UI 테스트는 Gradle 이 아니라 `adb shell am instrument -w -r --user 10 com.prism.vehicle.app.test/androidx.test.runner.AndroidJUnitRunner`.
@@ -92,7 +94,9 @@ git diff --name-status a8a3968..vehicle-integration-v0.1.0
 | `replay/` | 계약 DTO·파서·타임라인·재생 시계 + 단위 테스트 |
 | `adapters/` | Provider 4종·로더 + 통합 테스트 |
 | `sdk/` | Pleos/AAOS 어댑터, 매니페스트 |
-| `app/` | Compose 앱, assets Mock 시나리오 6종, UI 테스트 |
+| `app/` | Compose 앱, assets(03·01 통합 시나리오 7종 + `mock_*` 6종), 04 레이더 연결, UI 테스트 |
+| `pipeline/` | 03→01 통합 파이프라인 (JVM) |
+| `libs/` | 01 prediction-engine classes.jar (자체 빌드 AAR 에서 추출, sha256 b2ae94bb…) |
 | `tests/` | Mock 생성기, fixture 11종, 테스트 로그·스크린샷 |
 | 루트 | Gradle 설정·wrapper, lock 파일, 문서 5종 |
 

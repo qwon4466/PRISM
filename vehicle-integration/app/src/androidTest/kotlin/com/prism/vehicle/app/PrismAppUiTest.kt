@@ -36,7 +36,7 @@ class PrismAppUiTest {
     @Test fun listsAllScenarios() {
         rule.waitUntil(5_000) { vm.ui.value.scenarioIds.isNotEmpty() }
         rule.waitUntil(10_000) { runCatching { rule.onNodeWithTag("scenario_normal").fetchSemanticsNode() }.isSuccess } // 첫 실행 시 창이 늦게 붙음
-        listOf("normal", "rear_approach", "sudden_brake", "lane_change", "chain_reaction", "dropout").forEach {
+        listOf("normal", "sudden_braking", "rear_approach", "lane_change", "merge", "chain_reaction", "sensor_dropout", "mock_lane_change", "mock_dropout").forEach {
             rule.onNodeWithTag("scenario_list").performScrollToNode(hasTestTag("scenario_$it")) // 좁은 창에서는 화면 밖 항목이 아직 그려지지 않음
             rule.onNodeWithTag("scenario_$it").assertExists()
         }
@@ -45,7 +45,7 @@ class PrismAppUiTest {
 
     @Test fun playAdvancesTimeAndPauses() {
         open("chain_reaction")
-        rule.onNodeWithText("MOCK 데이터").assertExists()
+        rule.onNodeWithText("MOCK 데이터").assertDoesNotExist() // 03·01 실제 엔진 결과
         rule.onNodeWithTag("play").performSemanticsAction(SemanticsActions.OnClick) // 차량 홈 TaskView 에서 좌표 터치 주입이 막히는 경우가 있어 semantics 클릭 사용
         rule.waitUntil(5_000) { vm.ui.value.clock.positionMs > 1_000 }
         // 재생 중에는 매 프레임 재구성이라 Compose 테스트가 'idle' 을 기다리면 재생이 끝나 버린다 → 일시정지는 UI 스레드에서 바로 호출
@@ -59,14 +59,14 @@ class PrismAppUiTest {
     }
 
     @Test fun riskLevelChangesDuringPlayback() {
-        open("lane_change")
+        open("mock_lane_change")
         rule.runOnIdle { vm.seek(4_500) }
         rule.waitForIdle()
         rule.onNodeWithText("WARNING · 주변 차량 위험").assertExists()
     }
 
     @Test fun replayOnlyAfterParking() {
-        open("sudden_brake")
+        open("sudden_braking")
         rule.onNodeWithTag("open_replay").assertIsNotEnabled()
         rule.onNodeWithTag("parked").performScrollTo().performClick()
         rule.onNodeWithTag("open_replay").performScrollTo().assertIsEnabled().performClick()
@@ -78,7 +78,7 @@ class PrismAppUiTest {
     }
 
     @Test fun dropoutShowsMissingData() {
-        open("dropout")
+        open("mock_dropout")
         rule.runOnIdle { vm.seek(5_000) }
         rule.waitForIdle()
         rule.onNodeWithText("데이터 누락 — 현재 상태 알 수 없음").assertExists()

@@ -1,19 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    // AGP 9 는 Kotlin 을 내장하므로 org.jetbrains.kotlin.android 를 따로 적용하지 않는다
     alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.prism.vehicle.app"
-    compileSdk = 35
+    compileSdk = 37 // 04 visualization-engine 과 같은 값 (Compose BOM 2026.02 요구)
 
     defaultConfig {
         applicationId = "com.prism.vehicle.app"
         minSdk = 28
         targetSdk = 34 // Pleos Connect 에뮬레이터 = Android 14 (API 34)
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -32,11 +32,10 @@ android {
     }
 }
 
-kotlin { jvmToolchain(17) }
-
 dependencies {
     implementation(project(":adapters"))
     implementation(project(":sdk"))
+    implementation(project(":visualization-engine")) // 04 레이더·리플레이 화면
 
     implementation(platform(libs.compose.bom))
     implementation("androidx.compose.ui:ui")

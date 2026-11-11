@@ -1,0 +1,10 @@
+PRISM 통합 파이프라인 결과
+provenance: 03 simulation-engine@a6d177c samples + 01 prediction-engine@22027e5 (PredictionEngine.predict, 과거 5초 창). 02 risk-engine 미제출
+history window: 5000ms
+chain_reaction: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+lane_change: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+merge: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+normal: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+rear_approach: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+sensor_dropout: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+sudden_braking: VehicleFrame 121, PredictionFrame 121, 건너뜀 0

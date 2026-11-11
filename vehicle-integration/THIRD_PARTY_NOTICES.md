@@ -4,8 +4,10 @@
 
 | 구성요소 | 출처 | 버전 | 라이선스 | 사용 방식 |
 |---|---|---|---|---|
-| AndroidX (Compose UI, Material3, Activity, Lifecycle) | https://github.com/androidx/androidx · Google Maven | Compose BOM 2024.10.01, activity-compose 1.9.3, lifecycle 2.8.7 | Apache-2.0 | Gradle 의존성 |
-| kotlinx.serialization | https://github.com/Kotlin/kotlinx.serialization · Maven Central | 1.7.3 | Apache-2.0 | Gradle 의존성 |
+| AndroidX (Compose UI, Material3, Activity, Lifecycle) | https://github.com/androidx/androidx · Google Maven | Compose BOM 2026.02.01, activity-compose 1.9.3, lifecycle 2.8.7 | Apache-2.0 | Gradle 의존성 |
+| kotlinx.serialization | https://github.com/Kotlin/kotlinx.serialization · Maven Central | 1.9.0 | Apache-2.0 | Gradle 의존성 |
+| PRISM 01 prediction-engine | 팀 저장소 `prediction-engine/` (22027e5) | — | 팀 코드 | 자체 빌드 AAR 의 classes.jar (`libs/`), `pipeline/` 에서만 사용(APK 미포함) |
+| PRISM 04 visualization-engine | 팀 저장소 `visualization-engine/` (46ed5ff) | — | 팀 코드 (의존성 고지는 04 의 THIRD_PARTY_NOTICES.md) | Gradle 모듈 포함 |
 | kotlinx.coroutines | https://github.com/Kotlin/kotlinx.coroutines · Maven Central | 1.9.0 | Apache-2.0 | Gradle 의존성 |
 | JUnit 4 | https://github.com/junit-team/junit4 | 4.13.2 | EPL-1.0 | 테스트 전용 |
 | Pleos Vehicle SDK | `ai.pleos.playground:Vehicle` · nexus-playground.pleos.ai | 2.3.2 | 라이선스 파일 없음 (Pleos Playground 이용 조건 따름) | Gradle 의존성 |
