@@ -17,7 +17,7 @@
 | 오류 상태 (missing / invalid / stale JSON) | DONE | fixture 11종, UI 테스트 `unknownScenarioShowsErrorScreen` |
 | 데이터 경계 4종 (Scenario/Prediction/Risk/VehicleSdk Provider) | DONE | `adapters/` |
 | Simulation Mode | DONE | SDK 미호출 |
-| Pleos Context Mode — Vehicle 연결·기어·위치·내비·TTS | DONE (에뮬레이터) | `SDK_COMPATIBILITY.md` |
+| Pleos Context Mode — Vehicle 연결·브레이크 페달(capability→읽기→리스너)·기어(AAOS)·위치·내비·TTS | DONE (에뮬레이터) | `SDK_COMPATIBILITY.md` |
 | NaviHelper 상태 이벤트 수신 | PARTIAL | 초기화 성공. 경로 안내 중이 아니라 이벤트 응답은 미수신 |
 | ADAS Mode | BLOCKED (의도적 비활성) | 공개 SDK 없음, 공식 권한 미확인 |
 | 04 UI 라이브러리 연결 | BLOCKED | 04 산출물 미도착 → `PlaceholderRadar` |
@@ -66,7 +66,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 4. 공통 `contracts/` JSON Schema 가 아직 없어 지시서 02장 예시로 DTO 를 만들었다(`replay/src/main/kotlin/.../Contracts.kt`). Schema 가 나오면 대조 필요.
 5. 04 UI 는 `app/.../ui/Screens.kt` 의 `RadarSlot` 한 곳에서 교체.
 6. Mock 은 예측·위험을 계산하지 않는다(실제 미래 위치 복사, 사람이 정한 구간 등급, ttc_s=null). 05번 역할 경계.
-7. 권한: Pleos 앱 심사는 승인된 권한만 허용. 현재 선언 `CAR_POWERTRAIN`(AAOS), `FUSED_LOCATION`, `NAVI_ROUTE`, `TTS_SERVICE` — 심사 전 승인 확인.
+7. 권한: Pleos 앱 심사는 승인된 권한만 허용. 현재 선언 `CAR_POWERTRAIN`(AAOS), `CAR_DRIVE`(브레이크), `FUSED_LOCATION`, `NAVI_ROUTE`, `TTS_SERVICE` — 심사 전 승인 확인.
 8. Pleos 에뮬레이터 UI 테스트는 Gradle 이 아니라 `adb shell am instrument -w -r --user 10 com.prism.vehicle.app.test/androidx.test.runner.AndroidJUnitRunner`.
 
 ## 6. 의존성 고정

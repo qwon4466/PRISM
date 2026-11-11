@@ -12,6 +12,8 @@ import ai.pleos.playground.tts.constant.ErrorType
 import ai.pleos.playground.tts.constant.Mode
 import ai.pleos.playground.tts.listener.OnInitializeListener
 import ai.pleos.playground.vehicle.Vehicle
+import ai.pleos.playground.vehicle.api.model.capability.AccessType
+import ai.pleos.playground.vehicle.listener.BrakePedalStatusListener
 import android.car.Car
 import android.car.VehicleGear
 import android.car.VehiclePropertyIds
@@ -43,6 +45,7 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
     override val state: StateFlow<VehicleSdkState> = _state.asStateFlow()
 
     private var vehicle: Vehicle? = null
+    private var brakeRegistered = false
     private var car: Car? = null
     private var carProperties: CarPropertyManager? = null
     private var fused: FusedLocation? = null
@@ -63,6 +66,11 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
         override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
         override fun onErrorEvent(propId: Int, areaId: Int) =
             mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
+    }
+
+    private val brakeListener = object : BrakePedalStatusListener {
+        override fun onBrakePedalStatusUpdated(pressed: Boolean?) = onBrake(pressed, "listener")
+        override fun onFailed(exception: Exception) = fail(SdkFeature.BRAKE_PEDAL, exception)
     }
 
     private val locationListener = object : FusedLocationListener {
@@ -94,9 +102,37 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
         if (vehicle != null) return
         mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.PENDING)
         runCatching { Vehicle(appContext).also { it.initialize() } }
-            .onSuccess { vehicle = it; mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.CONFIRMED, "initialize() 완료") }
-            .onFailure { fail(SdkFeature.VEHICLE_SERVICE, it) }
+            .onSuccess { vehicle = it; mark(SdkFeature.VEHICLE_SERVICE, SupportStatus.CONFIRMED, "initialize() 완료"); startBrake(it) }
+            .onFailure { fail(SdkFeature.VEHICLE_SERVICE, it); mark(SdkFeature.BRAKE_PEDAL, SupportStatus.FAILED, "Vehicle 세션 없음") }
         startGear()
+    }
+
+    /** Pleos 문서 순서: capability 확인 → 현재 값 읽기 → 리스너 등록 (… stop() 에서 해제). 권한 CAR_DRIVE(Brake 도메인). */
+    private fun startBrake(v: Vehicle) {
+        mark(SdkFeature.BRAKE_PEDAL, SupportStatus.PENDING)
+        runCatching {
+            val brake = v.getBrake()
+            brake.checkBrakePedalStatusCapabilities(
+                { config ->
+                    val access = config.accessType
+                    if (access != AccessType.READ && access != AccessType.READ_WRITE) {
+                        mark(SdkFeature.BRAKE_PEDAL, SupportStatus.UNSUPPORTED, "capability accessType=$access")
+                        return@checkBrakePedalStatusCapabilities
+                    }
+                    runCatching {
+                        brake.getCurrentBrakePedalStatus({ onBrake(it, "capability=$access, read") }, { fail(SdkFeature.BRAKE_PEDAL, it) })
+                        brake.registerBrakePedalStatus(brakeListener)
+                        brakeRegistered = true
+                    }.onFailure { fail(SdkFeature.BRAKE_PEDAL, it) }
+                },
+                { fail(SdkFeature.BRAKE_PEDAL, it) },
+            )
+        }.onFailure { fail(SdkFeature.BRAKE_PEDAL, it) }
+    }
+
+    private fun onBrake(pressed: Boolean?, source: String) {
+        _state.update { it.copy(brakePressed = pressed) }
+        mark(SdkFeature.BRAKE_PEDAL, SupportStatus.CONFIRMED, "$source pressed=$pressed")
     }
 
     private fun startGear() {
@@ -189,7 +225,12 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
         carProperties = null
         car?.let { runCatching { it.disconnect() } }
         car = null
-        vehicle?.let { v -> runCatching { v.release() } }
+        vehicle?.let { v ->
+            // 리스너는 등록한 Vehicle 세션보다 오래 살면 안 된다 (공식 샘플 README)
+            if (brakeRegistered) runCatching { v.getBrake().unregisterBrakePedalStatus(brakeListener) }
+            brakeRegistered = false
+            runCatching { v.release() }
+        }
         vehicle = null
         fused?.let { f ->
             runCatching { f.unregisterFusedLocationCallback(locationListener) }

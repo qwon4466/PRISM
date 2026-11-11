@@ -11,6 +11,7 @@
 |---|---|---|---|---|
 | Vehicle 서비스 연결 | `Vehicle:2.3.2` | `VEHICLE_BINDING` (AAR 이 선언) | **CONFIRMED** | `initialize()` 완료 |
 | 차량 상태: 기어 | AAOS `CarPropertyManager` `GEAR_SELECTION` (`useLibrary("android.car")`) | `android.car.permission.CAR_POWERTRAIN` | **CONFIRMED** | `getIntProperty(GEAR_SELECTION)` + `registerCallback` → `GEAR_PARK`. 권한은 설치만으로 승인 (2026-11-11) |
+| 차량 상태: 브레이크 페달 | `Vehicle:2.3.2` `Brake` | `pleos.car.permission.CAR_DRIVE` (문서 권한 표: Brake 도메인) | **CONFIRMED** | 문서 순서대로 `checkBrakePedalStatusCapabilities` → accessType=`READ` → `getCurrentBrakePedalStatus` = `false` → `registerBrakePedalStatus` 리스너 수신 `false` → 백그라운드 전환 시 `unregisterBrakePedalStatus` 후 `release()` (2026-11-12). 표시만 하고 위험 판단에는 쓰지 않음 |
 | (이전) 기어 — Pleos Gear API | `Vehicle:2.3.2` `Gear` | `pleos.car.permission.CAR_DRIVE` | 교체됨 | `GEAR_PARK` 를 읽었으나 API 가 **deprecated** ("use the Google GEAR_SELECTION property") 이고 공식 문서에 없어 AAOS 표준으로 교체 |
 | 위치 | `FusedLocation:1.1.3` | `pleos.car.permission.FUSED_LOCATION` (**dangerous**, 런타임 동의) | **CONFIRMED** | `lat=37.42200 lon=-122.08400` (에뮬레이터 기본 위치) |
 | 내비 연동 | `NaviHelper:3.0.5` | `pleos.car.permission.NAVI_ROUTE` | **CONFIRMED** (초기화) | `initialize` 성공, `getRouteStateInfo()` 요청. 경로 안내 중이 아니라 상태 이벤트 응답은 미수신 |
@@ -31,7 +32,7 @@
 | 항목 | 문서 내용 | 이 앱 |
 |---|---|---|
 | 권한 정책 | 권한은 Pleos App Market 과 사전 협의·승인된 범위에서만 사용. 승인 안 된 권한을 선언하거나 해당 API 를 호출하면 **앱 심사 불통과** | 실제 호출하는 API 의 권한만 선언 (`CAR_INFO` 제거) |
-| Vehicle 권한 표 | 조회 `CAR_*`, 제어 `CONTROL_CAR_*`. DrivingMode·Brake·Odometer = `CAR_DRIVE` | Pleos Vehicle 도메인 API 는 쓰지 않으므로 `CAR_*` 선언 없음 (Vehicle 은 연결 확인만) |
+| Vehicle 권한 표 | 조회 `CAR_*`, 제어 `CONTROL_CAR_*`. DrivingMode·Brake·Odometer = `CAR_DRIVE` | Brake 도메인(브레이크 페달)만 사용 → `CAR_DRIVE` 하나만 선언. capability 를 먼저 확인하고 READ 일 때만 읽기·리스너 등록 |
 | API 정책 | AAOS 에 같은 기능이 있으면 AAOS 에 맞춘다 | Gear 는 공식 도메인 표에 없고 SDK 에서도 deprecated → AAOS `GEAR_SELECTION` + `android.car.permission.CAR_POWERTRAIN` 으로 교체. **심사 전 이 권한 승인 확인 필요** |
 | FusedLocation | `FUSED_LOCATION` (dangerous). `getLastKnownLocation` 은 null 가능, 콜백 null·`onError` 처리. 개인정보 설정으로 차단 시 `showLocationAccessBlockedPopup()` 으로 안내 가능 | null 무시, onError → FAILED 표시 |
 | NaviHelper | `get*Info()` = `NAVI_ROUTE`, 경로 요청 = `NAVI_ROUTE_SEARCH`, 화면 = `NAVI_CUSTOM_MAP` | 조회만 하므로 `NAVI_ROUTE` 만 |

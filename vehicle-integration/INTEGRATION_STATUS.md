@@ -36,7 +36,7 @@
 | 좁은 화면(분할·휴대폰) 레이아웃 | TESTED | 폭이 부족하면 위아래 배치. `05_phone_portrait_select.png` |
 | 단일 JSON 결과 파일 | TESTED | `singleJsonFilesAreAccepted` |
 | Simulation Mode | TESTED | SDK 미호출 확인 (상태 UNTESTED 유지) |
-| Pleos Context Mode | TESTED (에뮬레이터) | 기어(AAOS `GEAR_SELECTION`)·위치·내비·TTS CONFIRMED (`SDK_COMPATIBILITY.md`) |
+| Pleos Context Mode | TESTED (에뮬레이터) | 기어(AAOS `GEAR_SELECTION`)·브레이크 페달(Pleos Vehicle SDK, capability 확인 후 읽기)·위치·내비·TTS CONFIRMED (`SDK_COMPATIBILITY.md`) |
 | ADAS Mode | 비활성 (설계대로) | 공개 SDK 없음 |
 | 라이프사이클 리소스 해제 | TESTED | 백그라운드 전환 시 logcat `released all Pleos SDK sessions` |
 | 앱 재시작 | TESTED | `am force-stop` 후 재실행, Pleos 세션 재연결 확인 |

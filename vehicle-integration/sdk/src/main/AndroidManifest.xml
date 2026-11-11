@@ -7,6 +7,8 @@
     -->
     <!-- 기어: AAOS 표준 GEAR_SELECTION (Pleos Vehicle SDK 의 Gear API 는 deprecated) -->
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
+    <!-- 브레이크 페달 상태 (Pleos Vehicle SDK Brake 도메인 = CAR_DRIVE, 공식 문서 권한 표) -->
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
     <!-- protectionLevel=dangerous → 런타임 동의 필요 (MainActivity 에서 요청) -->
     <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />

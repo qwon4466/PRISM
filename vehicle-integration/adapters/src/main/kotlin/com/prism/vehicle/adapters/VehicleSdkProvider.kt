@@ -20,7 +20,8 @@ interface VehicleSdkProvider {
 
 enum class SdkFeature(val label: String) {
     VEHICLE_SERVICE("Vehicle SDK 연결"),
-    GEAR("차량 상태: 기어(P단 판정)"),
+    GEAR("차량 상태: 기어(P단 판정, AAOS)"),
+    BRAKE_PEDAL("차량 상태: 브레이크 페달 (Pleos Vehicle SDK)"),
     FUSED_LOCATION("FusedLocation 위치"),
     NAVI_HELPER("NaviHelper 내비 연동"),
     TEXT_TO_SPEECH("TextToSpeech 음성 안내"),
@@ -49,6 +50,8 @@ data class VehicleSdkState(
     val features: Map<SdkFeature, FeatureStatus> = SdkFeature.entries.associateWith { FeatureStatus(SupportStatus.UNTESTED) } +
         (SdkFeature.ADAS_OBJECTS to ADAS_UNSUPPORTED),
     val gear: Gear = Gear.UNKNOWN,
+    /** null = 모름(capability 없음·값 없음). 위험 판단에 쓰지 않고 표시만 한다. */
+    val brakePressed: Boolean? = null,
     val location: Location? = null,
     val navigationStatus: String? = null,
 ) {

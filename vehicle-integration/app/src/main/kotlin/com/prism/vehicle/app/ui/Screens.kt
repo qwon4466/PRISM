@@ -151,7 +151,8 @@ private fun SdkPanel(s: UiState, vm: PrismViewModel, modifier: Modifier) {
                 }
             }
         }
-        Text("기어: ${s.sdk.gear}  /  위치: ${s.sdk.location?.let { "%.5f, %.5f".format(it.latitude, it.longitude) } ?: "-"}", fontSize = 13.sp)
+        val brake = when (s.sdk.brakePressed) { true -> "밟음"; false -> "뗌"; null -> "-" }
+        Text("기어: ${s.sdk.gear}  /  브레이크: $brake  /  위치: ${s.sdk.location?.let { "%.5f, %.5f".format(it.latitude, it.longitude) } ?: "-"}", fontSize = 13.sp)
         if (s.mode == AppMode.PLEOS_CONTEXT) OutlinedButton(onClick = { vm.speakTest() }) { Text("TTS 테스트") }
     }
 }
