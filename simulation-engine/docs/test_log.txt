@@ -1,0 +1,26 @@
+== gradlew test (2026-11-11, Windows 11, JDK 21, Gradle 8.14, Kotlin 2.0.21)
+com.prism.simulation.IdentityTest: tests=6 failures=0 errors=0 skipped=0
+  PASS idsUniqueAndStable()
+  PASS manifestMetadataComplete()
+  PASS expectedOutputFiles()
+  PASS missingOnlyInsideAnnotatedDropout()
+  PASS laneIdsInMap()
+  PASS dropoutScenarioActuallyDrops()
+com.prism.simulation.SeedTest: tests=3 failures=0 errors=0 skipped=0
+  PASS sameSeedSameOutput()
+  PASS seedChangesNoise()
+  PASS committedSamplesAreReproducible()
+com.prism.simulation.TransformTest: tests=5 failures=0 errors=0 skipped=0
+  PASS wrapAngleRange()
+  PASS egoItselfIsOriginFacingForward()
+  PASS egoRotatedRight()
+  PASS egoMovedLeftLaneVehicle()
+  PASS rightLaneVehicleAhead()
+com.prism.simulation.UnitsTest: tests=6 failures=0 errors=0 skipped=0
+  PASS timeAxis()
+  PASS egoIsOriginFacingForward()
+  PASS contractExampleFromSpecIsValid()
+  PASS framesMatchSchemaAndAreFinite()
+  PASS egoPoseSidecarReconstructsMotion()
+  PASS speedUnitsAreMetersPerSecond()
+TOTAL 20
