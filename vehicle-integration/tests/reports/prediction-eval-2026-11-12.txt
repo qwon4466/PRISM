@@ -1,0 +1,8 @@
+01 예측 vs 03 실제 미래 위치 (후보 궤적 중 최소 거리 오차)
+chain_reaction  1s: mean 0.14 m, p95 0.63 m (n=555) | 3s: mean 2.30 m, p95 8.57 m (n=455)
+lane_change     1s: mean 0.06 m, p95 0.22 m (n=555) | 3s: mean 0.68 m, p95 3.46 m (n=455)
+merge           1s: mean 0.08 m, p95 0.32 m (n=555) | 3s: mean 1.18 m, p95 5.00 m (n=455)
+normal          1s: mean 0.02 m, p95 0.11 m (n=555) | 3s: mean 0.37 m, p95 2.34 m (n=455)
+rear_approach   1s: mean 0.03 m, p95 0.16 m (n=555) | 3s: mean 0.63 m, p95 3.75 m (n=455)
+sensor_dropout  1s: mean 0.09 m, p95 0.46 m (n=515) | 3s: mean 0.51 m, p95 2.55 m (n=405)
+sudden_braking  1s: mean 0.04 m, p95 0.23 m (n=555) | 3s: mean 0.93 m, p95 5.35 m (n=455)
