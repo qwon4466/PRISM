@@ -222,7 +222,8 @@ def main():
     # index.json: 통합 파이프라인(pipeline/)이 넣은 실제 엔진 시나리오를 앞에 유지하고 mock_* 를 뒤에 붙인다
     index = OUT / "index.json"
     kept = [i for i in (json.loads(index.read_text(encoding="utf-8")) if index.exists() else []) if not i.startswith("mock_")]
-    index.write_text(json.dumps(kept + [m["scenario_id"] for m, *_ in scenarios]), encoding="utf-8")
+    # pipeline/ 의 writeIndex 와 같은 규칙·형식: 엔진 시나리오 다음에 mock_* 를 이름순, 공백 없는 JSON
+    index.write_text(json.dumps(kept + sorted(m["scenario_id"] for m, *_ in scenarios), separators=(",", ":")), encoding="utf-8")
     make_fixtures(scenarios[0])
     for m, vf, pf, rf in scenarios:
         levels = {}
