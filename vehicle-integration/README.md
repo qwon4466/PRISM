@@ -12,6 +12,9 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 | `adapters/` | Kotlin JVM | `ScenarioDataProvider` · `PredictionDataProvider` · `RiskDataProvider` · `VehicleSdkProvider` 경계, JSON 파일 구현, `ScenarioLoader` |
 | `sdk/` | Android library | `PleosVehicleSdkProvider` — Vehicle(기어) · FusedLocation · NaviHelper · TextToSpeech |
 | `app/` | Android app | Compose UI, 모드 전환, 재생/리플레이, 오류 화면, `assets/scenarios/` |
+| `pipeline/` | Kotlin JVM | 03 `simulation-engine/samples` → 01 `PredictionEngine` → `app/src/main/assets/scenarios/` (`.\gradlew.bat :pipeline:run`) |
+| `libs/` | — | 01 prediction-engine 의 classes.jar (01 자체 빌드 AAR 에서 추출해 고정) |
+| `../visualization-engine` | Android library | 04 레이더·리플레이. 소스를 고치지 않고 `settings.gradle.kts` 에서 모듈로 포함 |
 | `tests/` | — | Mock 생성기(`tools/`), 오류 케이스 fixture(`fixtures/`), 테스트 결과(`reports/`) |
 
 ## 앱 모드
@@ -19,17 +22,18 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 | 모드 | 데이터 | 상태 |
 |---|---|---|
 | Simulation Mode | assets 의 시뮬레이션·예측·위험 JSON 재생. SDK 호출 없음. 정차(P)는 화면 스위치로 가정 | 기본, 공모전 시연용 |
-| Pleos Context Mode | 기어·위치·내비 상태·TTS 만 실제 Pleos SDK. 주변 차량 위험은 여전히 시뮬레이션이라고 표시 | Pleos 에뮬레이터에서 4개 SDK 모두 CONFIRMED (`SDK_COMPATIBILITY.md`) |
+| Pleos Context Mode | 기어(AAOS)·브레이크 페달·위치·내비 상태·TTS 만 실제 SDK. 주변 차량 위험은 여전히 시뮬레이션이라고 표시 | Pleos 에뮬레이터에서 4개 SDK 모두 CONFIRMED (`SDK_COMPATIBILITY.md`) |
 | ADAS Mode | — | **비활성**. 공개 SDK 에 주변 차량 객체 API 없음, 공식 권한 확인 전 구현하지 않음 |
 
 주행 중 화면은 위험 등급 한 줄만 보여 준다. 시간 이동·배속·원인 코드·TTC 는 **정차(P) 후 리플레이** 화면에서만 연다.
 
 ## 요구 환경
 
-- JDK 17 (`C:\Users\ichan\.jdks\ms-17.0.17`). 시스템 Java 23 / Android Studio JBR 25 로는 Gradle 8.13 이 동작하지 않는다.
+- JDK 17 이상. 빌드 도구는 04 와 같다: Gradle 9.6.0, AGP 9.5.1(내장 Kotlin), Kotlin 2.2.10, Compose BOM 2026.02.01, 앱 compileSdk 37.
+- 팀 저장소 전체를 clone 해야 한다(`../visualization-engine`, `../simulation-engine` 을 형제 폴더로 읽는다).
 - Android SDK Platform 35, `ANDROID_HOME` 설정
 - Pleos SDK 확인용: AVD `Pleos_Connect_v2.1.0` (Android 14, pleos_car_emulator)
-- **Gradle 은 영문 경로에서 실행한다.** 한글 경로(`바탕 화면\과제\현대 공모전`)에서는 JVM 테스트가 `ClassNotFoundException` 으로 실패한다(Windows 비유니코드 코드페이지 문제). 이 PC 에서는 `C:\dev\prism` 을 PRISM 폴더 정션으로 만들어 그 경로에서 빌드한다: `cmd /c mklink /J C:\dev\prism "<PRISM 폴더>"`. `android.overridePathCheck=true` 는 한글 경로에서 IDE 동기화가 막히지 않게 남겨 둔다.
+- **Gradle 은 영문 경로에서 실행한다.** 한글 경로(`바탕 화면\과제\현대 공모전`)에서는 JVM 테스트가 `ClassNotFoundException` 으로 실패한다(Windows 비유니코드 코드페이지 문제). 저장소는 `C:\dev\prism` 에 둔다. 계획서 규칙(클라우드 드라이브에 `.git` 동기화 금지)에 따라 OneDrive·Google Drive 폴더 안에 clone 하지 않는다. `android.overridePathCheck=true` 는 다른 팀원이 한글 경로에서 열 때 AGP 경로 검사로 막히지 않게 남겨 둔다.
 
 ## 재현 명령 (설치 / 데모 / 테스트)
 
@@ -51,7 +55,7 @@ UI 자동 테스트 (에뮬레이터 연결 상태, Simulation Mode 흐름 7개)
 .\gradlew.bat connectedDebugAndroidTest
 ```
 
-빌드가 `... is located outside the root directory 'C:\dev\prism...'` 로 실패하면 정션 경로와 실제 경로가 섞인 것이다. `.\gradlew.bat --stop` 후 `adapters\build`, `replay\build` 를 지우고 다시 빌드한다.
+빌드가 `... is located outside the root directory ...` 로 실패하면 이전 경로의 빌드 결과가 남은 것이다. `.\gradlew.bat --stop` 후 `adapters\build`, `replay\build` 를 지우고 다시 빌드한다.
 
 VS Code: `현대 공모전/.vscode/tasks.json` 에 에뮬레이터 실행 · 빌드 · 설치+실행 · logcat · 단위 테스트 · Mock 재생성 태스크가 있다.
 
@@ -69,11 +73,12 @@ VS Code: `현대 공모전/.vscode/tasks.json` 에 에뮬레이터 실행 · 빌
 - 예측·위험 파일이 없으면 차량만 재생하고 경고를 남긴다. VehicleFrame 이 없으면 재생하지 않는다.
 - 예측·위험은 **같은 timestamp 의 VehicleFrame 좌표계에서만** 그린다. 짝이 없는 프레임은 버리고 경고로 보고한다(다른 시점 좌표를 섞지 않음).
 - 직전 프레임이 `step_ms` 의 2배보다 오래되면 "데이터 누락"으로 표시하고 위험 등급을 UNKNOWN 으로 본다.
-- 04 visualization: `app/.../ui/Screens.kt` 의 `RadarSlot` 한 곳에서 `PlaceholderRadar` 를 `PrismRadarView(vehicleFrame, predictionFrame, riskFrame, mode)` 로 바꾸고 `app/build.gradle.kts` 에 모듈/AAR 의존성을 추가한다.
+- 03·01: `.\gradlew.bat :pipeline:run` 이 03 의 `samples/` 를 읽어 01 예측을 붙이고 assets 를 다시 만든다. 02 RiskFrame 이 생기면 같은 폴더에 `risk_frames.jsonl` 을 넣으면 된다.
+- 04: `app/.../ui/EngineRadar.kt` 에서 04 `RadarScreen` 을 쓴다.
 - 엔진 결과를 넣은 뒤 `.\gradlew.bat test` 를 돌리면 `AssetScenarioIntegrationTest` 가 ID 연결·좌표계·시간 동기화를 다시 검사한다.
 
 ## Mock 데이터
 
-03/01/02 결과가 오기 전까지 `tests/tools/make_mock_scenarios.py` 로 만든 Mock 6종을 쓴다: `normal`, `rear_approach`, `sudden_brake`, `lane_change`, `chain_reaction`, `dropout`. 각 10초, 100ms 간격, 랜덤 없음. manifest 의 `mock: true` 이면 화면에 **MOCK 데이터** 배지가 뜬다. Mock 의 예측(등속/등가속 외삽)과 위험 라벨(간단 임계값)은 01·02 엔진의 알고리즘이 아니며 검증된 위험도가 아니다.
+실제 엔진 시나리오 7종 아래에 `tests/tools/make_mock_scenarios.py` 로 만든 Mock 6종(`mock_normal`, `mock_rear_approach`, `mock_sudden_brake`, `mock_lane_change`, `mock_chain_reaction`, `mock_dropout`)을 둔다. 02 결과가 없어 위험 표시를 확인할 수 있는 것은 Mock 뿐이다. 각 10초, 100ms 간격, 랜덤 없음. manifest 의 `mock: true` 이면 화면에 **MOCK 데이터** 배지가 뜬다. Mock 은 예측·위험을 **계산하지 않는다**: 예측은 같은 스크립트의 실제 미래 위치를 옮겨 적은 것(`mode: mock_future_truth`), 위험 등급은 시나리오별로 사람이 정한 시간 구간 표, `ttc_s` 는 전부 `null`. 05번 역할 경계(예측·TTC 알고리즘 금지)를 지키기 위해서다. 검증된 위험도가 아니다.
 
 자세한 상태: `INTEGRATION_STATUS.md`, SDK 지원 여부: `SDK_COMPATIBILITY.md`, 출처·라이선스: `THIRD_PARTY_NOTICES.md`.

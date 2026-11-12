@@ -27,8 +27,13 @@ class AssetScenarioIntegrationTest {
     private fun all() = providers.scenarioIds().also { assertTrue("index.json 비어 있음", it.isNotEmpty()) }
         .map { id -> id to loader.load(id) }
 
-    @Test fun indexListsFiveRequiredScenariosPlusDropout() {
-        assertTrue(providers.scenarioIds().containsAll(listOf("normal", "rear_approach", "sudden_brake", "lane_change", "chain_reaction", "dropout")))
+    private val engineIds = listOf("normal", "sudden_braking", "rear_approach", "lane_change", "merge", "chain_reaction", "sensor_dropout")
+    private val mockIds = listOf("mock_normal", "mock_rear_approach", "mock_sudden_brake", "mock_lane_change", "mock_chain_reaction", "mock_dropout")
+
+    @Test fun indexListsEngineScenariosThenMocks() {
+        val ids = providers.scenarioIds()
+        assertEquals("03 실제 엔진 시나리오 7종이 앞에 온다", engineIds.toSet(), ids.take(7).toSet())
+        assertTrue(ids.containsAll(mockIds))
     }
 
     @Test fun everyScenarioParsesAndAllIdsLink() {
@@ -49,31 +54,64 @@ class AssetScenarioIntegrationTest {
         }
     }
 
-    @Test fun predictionAndRiskShareVehicleTimestamps() {
-        all().forEach { (id, r) ->
-            val t = (r as LoadResult.Ready).timeline
+    /** 03 → 01 통합: 모든 VehicleFrame 시점에 01 예측이 같은 timestamp 로 붙고, 예측 차량은 그 프레임에 실제로 있다. */
+    @Test fun engineScenariosHavePredictionFromEngine01AtEveryFrame() {
+        engineIds.forEach { id ->
+            val t = (loader.load(id) as LoadResult.Ready).timeline
+            assertEquals("$id 은 03 엔진 데이터(mock 아님)", false, t.manifest.mock)
+            t.vehicleFrames.forEach { f ->
+                val p = t.snapshotAt(f.timestampMs).prediction
+                assertEquals("$id@${f.timestampMs}", f.timestampMs, p?.timestampMs)
+                val ids = f.vehicles.map { it.id }.toSet()
+                assertTrue("$id@${f.timestampMs}", p!!.predictions.all { it.vehicleId in ids })
+                assertTrue("$id@${f.timestampMs} 후보 궤적", p.predictions.all { vp -> vp.trajectories.isNotEmpty() && vp.trajectories.all { it.points.isNotEmpty() } })
+            }
+        }
+    }
+
+    /** 02 위험 엔진 결과가 없으므로 실제 엔진 시나리오에는 RiskFrame 이 없고, 그 사실이 경고로 남는다(05 는 위험을 만들지 않는다). */
+    @Test fun engineScenariosHaveNoRiskUntilEngine02Delivers() {
+        engineIds.forEach { id ->
+            val t = (loader.load(id) as LoadResult.Ready).timeline
+            assertEquals(null, t.snapshotAt(1000).risk)
+            assertTrue(t.issues.any { it.severity == Severity.WARNING && "risk_frames" in it.where })
+        }
+    }
+
+    @Test fun mockScenariosShareVehicleTimestamps() {
+        mockIds.forEach { id ->
+            val t = (loader.load(id) as LoadResult.Ready).timeline
             t.vehicleFrames.forEach { f ->
                 val s = t.snapshotAt(f.timestampMs)
-                assertEquals("$id@${f.timestampMs}", f.timestampMs, s.prediction?.timestampMs)
+                // Mock 예측은 실제 미래 위치를 옮긴 것이라 마지막 1초(옮길 미래 없음)에는 없다
+                if (f.timestampMs <= t.durationMs - 1000) assertEquals("$id@${f.timestampMs}", f.timestampMs, s.prediction?.timestampMs)
+                else assertEquals("$id@${f.timestampMs}", null, s.prediction)
                 assertEquals("$id@${f.timestampMs}", f.timestampMs, s.risk?.timestampMs)
             }
         }
     }
 
-    @Test fun riskScenariosActuallyRaiseRisk() {
-        all().filter { it.first in setOf("rear_approach", "sudden_brake", "lane_change", "chain_reaction") }.forEach { (id, r) ->
-            val t = (r as LoadResult.Ready).timeline
+    @Test fun mockRiskScenariosActuallyRaiseRisk() {
+        listOf("mock_rear_approach", "mock_sudden_brake", "mock_lane_change", "mock_chain_reaction").forEach { id ->
+            val t = (loader.load(id) as LoadResult.Ready).timeline
             val levels = (0..t.durationMs step 100).map { t.snapshotAt(it).topLevel.name }.toSet()
             assertTrue("$id levels=$levels", "WARNING" in levels || "WATCH" in levels)
         }
     }
 
-    @Test fun dropoutScenarioHasStaleWindowAndUnknown() {
-        val t = (loader.load("dropout") as LoadResult.Ready).timeline
+    @Test fun mockDropoutHasStaleWindowAndUnknown() {
+        val t = (loader.load("mock_dropout") as LoadResult.Ready).timeline
         assertTrue(t.snapshotAt(5000).stale)
         assertTrue((0..t.durationMs step 100).any { ms -> t.snapshotAt(ms).risk?.riskObjects?.any { it.riskLevel.name == "UNKNOWN" } == true })
-        // 7.0~8.0s car_02 관측 누락: 해당 프레임에 car_02 없음
         assertTrue(t.snapshotAt(7500).vehicle!!.vehicles.none { it.id == "car_02" })
+    }
+
+    /** 03 sensor_dropout: car_01 3~5s 관측 누락 → 그 구간 프레임에 car_01 이 없고 01 도 car_01 을 예측하지 않는다. */
+    @Test fun engineSensorDropoutMissingVehicleNotPredicted() {
+        val t = (loader.load("sensor_dropout") as LoadResult.Ready).timeline
+        val s = t.snapshotAt(4000)
+        assertTrue(s.vehicle!!.vehicles.none { it.id == "car_01" })
+        assertTrue(s.prediction!!.predictions.none { it.vehicleId == "car_01" })
     }
 
     @Test fun replayWalksWholeScenarioMonotonically() {

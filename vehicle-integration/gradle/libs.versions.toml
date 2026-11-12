@@ -1,9 +1,10 @@
 [versions]
-kotlin = "2.0.21"
-agp = "8.7.2"
+# 04 visualization-engine 과 같은 빌드 도구 (AGP 9.5.1 내장 Kotlin, Kotlin 2.2.10, Compose BOM 2026.02.01)
+kotlin = "2.2.10"
+agp = "9.5.1"
 coroutines = "1.9.0"
-serialization = "1.7.3"
-compose-bom = "2024.10.01"
+serialization = "1.9.0"
+compose-bom = "2026.02.01"
 activity-compose = "1.9.3"
 lifecycle = "2.8.7"
 junit4 = "4.13.2"

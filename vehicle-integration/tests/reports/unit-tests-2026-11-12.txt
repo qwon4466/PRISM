@@ -1,0 +1,24 @@
+gradlew test — 2026-11-12, JDK 17, Gradle 9.6.0 / AGP 9.5.1, C:\dev\prism\vehicle-integration
+testsuite name="com.prism.vehicle.adapters.AssetScenarioIntegrationTest" tests="10" skipped="0" failures="0" errors="0"
+testsuite name="com.prism.vehicle.adapters.FixtureErrorHandlingTest" tests="12" skipped="0" failures="0" errors="0"
+testsuite name="com.prism.vehicle.replay.ContractParserTest" tests="4" skipped="0" failures="0" errors="0"
+testsuite name="com.prism.vehicle.replay.ReplayClockTest" tests="4" skipped="0" failures="0" errors="0"
+testsuite name="com.prism.vehicle.replay.ScenarioTimelineTest" tests="8" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.ContractJsonTest" tests="8" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.ExampleIoTest" tests="1" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.GeometryTest" tests="6" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.SampleScenarioTest" tests="8" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.SceneBuilderTest" tests="13" skipped="0" failures="0" errors="0"
+testsuite name="ai.prism.visualization.TeamContractCompatibilityTest" tests="4" skipped="1" failures="0" errors="0"
+testsuite name="ai.prism.visualization.VehicleShapesTest" tests="5" skipped="0" failures="0" errors="0"
+
+PRISM 통합 파이프라인 결과
+provenance: 03 simulation-engine@a6d177c samples + 01 prediction-engine@22027e5 (PredictionEngine.predict, 과거 5초 창). 02 risk-engine 미제출
+history window: 5000ms
+chain_reaction: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+lane_change: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+merge: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+normal: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+rear_approach: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+sensor_dropout: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
+sudden_braking: VehicleFrame 121, PredictionFrame 121, 건너뜀 0
