@@ -62,10 +62,13 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
         mark(f, SupportStatus.FAILED, "${e.javaClass.simpleName}: ${e.message}")
 
     // 같은 인스턴스로 register/unregister 해야 한다.
-    private val gearCallback = object : CarPropertyManager.CarPropertyEventCallback {
-        override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
-        override fun onErrorEvent(propId: Int, areaId: Int) =
-            mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
+    // lazy: 생성자에서 만들면 android.car 가 없는 휴대폰에서 앱 시작 시 NoClassDefFoundError (QA 2026-11-13)
+    private val gearCallback by lazy {
+        object : CarPropertyManager.CarPropertyEventCallback {
+            override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
+            override fun onErrorEvent(propId: Int, areaId: Int) =
+                mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
+        }
     }
 
     private val brakeListener = object : BrakePedalStatusListener {
