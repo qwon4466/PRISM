@@ -11,8 +11,9 @@ import java.util.Locale
 
 /** A short two-note cue followed by spoken, explicitly simulated guidance. */
 class WarningAudio(app: Application) {
+    // 알림음·음성 모두 내비 안내 볼륨 그룹으로: 음악 볼륨과 따로 조절되고, 재생 중인 음악은 잠시 줄어든다
     private val attributes = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
     private val soundPool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(attributes).build()
@@ -32,15 +33,13 @@ class WarningAudio(app: Application) {
             if (result == TextToSpeech.SUCCESS) {
                 speechReady = speech.setLanguage(Locale.KOREAN) >= TextToSpeech.LANG_AVAILABLE
                 Log.i(TAG, "androidSpeechReady=$speechReady")
-                speech.setAudioAttributes(AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                speech.setAudioAttributes(PleosWarningSpeech.GUIDANCE)
             }
         }
     }
 
     fun announce(message: String, pleos: VehicleSdkProvider?, chime: Boolean = true): Boolean {
-        val played = chime && chimeReady && soundPool.play(chimeId, 0.75f, 0.75f, 1, 0, 1f) != 0
+        val played = chime && chimeReady && soundPool.play(chimeId, 1f, 1f, 1, 0, 1f) != 0
         if (pleos?.speak(message) == true) {
             Log.i(TAG, "warning output=pleos chime=$played")
             return true

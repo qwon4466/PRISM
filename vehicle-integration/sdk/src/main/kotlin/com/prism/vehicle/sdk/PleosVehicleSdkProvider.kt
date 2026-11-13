@@ -205,6 +205,7 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
             tts = t
             t.initialize(object : OnInitializeListener {
                 override fun onSuccess() {
+                    runCatching { t.setAudioAttributes(PleosWarningSpeech.GUIDANCE) } // 내비 안내 볼륨 그룹
                     ttsReady = true
                     mark(SdkFeature.TEXT_TO_SPEECH, SupportStatus.CONFIRMED, "ON_DEVICE initialize 성공")
                 }

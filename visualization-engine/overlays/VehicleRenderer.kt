@@ -200,7 +200,7 @@ object VehicleRenderer {
     }
 
     private val STALE_OUTLINE = Color(0xFF8A919C)
-    private val CHIP_BG = Color(0xE614171C)
+    private val CHIP_BG = Color(0xE6FFFFFF)
 
     /**
      * 차량 라벨 칩(차량 오른쪽, 화면 밖으로 나가면 왼쪽). 영역·궤적·연결선보다 위에 그린다.
@@ -257,7 +257,7 @@ object VehicleRenderer {
                 v.level == DisplayLevel.WARNING -> Triple(Color(style.fill), Color.White, Color(style.fill))
                 v.level == DisplayLevel.WATCH -> Triple(CHIP_BG, Color(style.fill), Color(style.fill))
                 v.level == DisplayLevel.UNKNOWN -> Triple(CHIP_BG, Color(style.stroke), Color(style.stroke))
-                else -> Triple(CHIP_BG, RadarColors.text, Color(0xFF3A414C))
+                else -> Triple(CHIP_BG, RadarColors.text, Color(0xFF9EADBD))
             }
             chipBottom = drawChip(textMeasurer, text, fg, bg, border,
                 dashed = v.level == DisplayLevel.UNKNOWN, icon = if (showIcon) style else null,

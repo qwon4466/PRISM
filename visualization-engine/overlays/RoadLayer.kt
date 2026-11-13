@@ -8,14 +8,15 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 
 object RadarColors {
-    val background = Color(0xFF14171C)
-    val asphalt = Color(0xFF242932)
-    val laneLine = Color(0xFF6B7380)
-    val edgeLine = Color(0xFF9AA2AE)
-    val chevron = Color(0xFF3A414C)
-    val text = Color(0xFFE8EAED)
-    val subtext = Color(0xFFA3ABB7)
-    val labelBg = Color(0xCC14171C)
+    // 05 앱 v0.3.0 라이트 화면(EngineRadar)과 같은 밝은 색
+    val background = Color(0xFFF3F7FB)
+    val asphalt = Color(0xFFDDE5ED)
+    val laneLine = Color(0xFF9EADBD)
+    val edgeLine = Color(0xFF7F8FA0)
+    val chevron = Color(0xFFBCC8D4)
+    val text = Color(0xFF172536)
+    val subtext = Color(0xFF526579)
+    val labelBg = Color(0xE6F3F7FB)
 }
 
 /** 차선 점선(12 m)과 셰브런(30 m) 주기의 공배수. 도로 스크롤 위상은 이 값으로 나눈 나머지만 쓰면 된다. */

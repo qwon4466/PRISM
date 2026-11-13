@@ -42,8 +42,8 @@ object RiskAnalysisTestTags {
     const val SENSOR = "prism.analysis.sensor"
 }
 
-private val CARD = Color(0xFF1B1F25)
-private val CARD_INNER = Color(0xFF232832)
+private val CARD = Color(0xFFFFFFFF)
+private val CARD_INNER = Color(0xFFEEF3F8)
 
 /**
  * 위험 분석 패널(공개 API). [ai.prism.visualization.rendering.RiskAnalyzer] 결과를 그대로 보여 준다.
