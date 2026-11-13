@@ -11,6 +11,6 @@
       "label": "정상 주행, 5대 일정 속도"
     }
   ],
-  "provenance": "MOCK: vehicle-integration/tests/tools/make_mock_scenarios.py (03/01/02 엔진 산출물 아님)",
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
   "mock": true
 }

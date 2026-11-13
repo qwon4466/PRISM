@@ -28,3 +28,9 @@
 - 한 번의 계측 재검사는 이전 테스트 APK가 변경 전 `openScenario(String)`을 호출해 `NoSuchMethodError`가 났다. 같은 소스에서 테스트 APK를 다시 빌드해 성공했지만, 사용자의 요청에 따라 에뮬레이터 재실행은 중단했다. 따라서 이 버전의 최종 APK에 대한 13개 시나리오 계측 재검사 완료를 주장하지 않는다.
 
 APK: `dist/PRISM-vehicle-v0.3.0-debug.apk` (Debug 서명, 테스트용). 설치 시 기존 `com.prism.vehicle.app` 0.2.0 위에 업데이트된다. 소스 변경은 `vehicle-integration/` 안에만 적용했다.
+
+## 개발 언어 정리 (2026-11-13)
+
+- 앱 실행 코드는 Kotlin을 유지했다. Python 보조 도구 3개는 Java 알림음 생성기와 Kotlin Mock 생성·예측 평가 도구로 교체했다. Gradle 설정은 Kotlin DSL이다.
+- Java 생성 알림음은 기존 WAV와 SHA-256이 같다. Kotlin Mock 생성 결과는 기존 6개 시나리오 JSONL 1,713행에서 숫자 표기(`25`/`25.0`)를 제외하고 일치한다. 예측 평가와 Mock 생성 Gradle 작업을 실행했다.
+- APK는 변경된 Mock provenance 경로를 반영해 다시 빌드했다. 관련 단위 테스트 46개가 통과했다. 이번 언어 변경 뒤 에뮬레이터 재검사는 수행하지 않았다.
