@@ -16,7 +16,7 @@
 
 ## 재현·테스트
 
-- 빌드: JDK 17에서 `.\gradlew.bat :replay:test :adapters:test :app:testDebugUnitTest :app:assembleDebug`
+- 빌드: JDK 17에서 `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :replay:test :adapters:test :app:testDebugUnitTest :app:assembleDebug`
 - 시나리오 검사: 13개 assets 전체의 차량 ID·시각 대응, 정상 주행의 오경고, 앞차 거리 감소에 따른 보통→주의→위험, 끼어들기·급정거·뒤차 접근 원인, 박스 중심 좌표를 단위 테스트로 검증.
 - Pleos AVD: `Pleos_Connect_v2.1.0` Android 14 사용자 10에서 APK 설치와 라이트 선택 화면을 확인했다. UI 계측 검사에서 13개 시나리오 모두 로드되고 차량별 평가가 생성됨을 확인했다. 박스와 차량 중심의 좌표 일치는 단위 검사로 확인했다. 에뮬레이터의 시스템 서비스 재시작으로 위험 구간의 시각 캡처는 아직 완료하지 못했다.
 - 음성: AVD 로그에서 Pleos TTS 초기화(`pleosSpeechReady=true`)와 알림음 로딩(`chimeReady=true`)을 확인했다. 반복 발화와 실제 스피커 청취 품질은 추가 확인이 필요하다.
@@ -34,3 +34,4 @@ APK: `dist/PRISM-vehicle-v0.3.0-debug.apk` (Debug 서명, 테스트용). 설치 
 - 앱 실행 코드는 Kotlin을 유지했다. Python 보조 도구 3개는 Java 알림음 생성기와 Kotlin Mock 생성·예측 평가 도구로 교체했다. Gradle 설정은 Kotlin DSL이다.
 - Java 생성 알림음은 기존 WAV와 SHA-256이 같다. Kotlin Mock 생성 결과는 기존 6개 시나리오 JSONL 1,713행에서 숫자 표기(`25`/`25.0`)를 제외하고 일치한다. 예측 평가와 Mock 생성 Gradle 작업을 실행했다.
 - APK는 변경된 Mock provenance 경로를 반영해 다시 빌드했다. 관련 단위 테스트 46개가 통과했다. 이번 언어 변경 뒤 에뮬레이터 재검사는 수행하지 않았다.
+- 추가 점검: 원본 작업 폴더와 개발 브랜치에서 Shell·Batch Gradle 실행 스크립트를 제거했다. Java Gradle Wrapper 직접 실행을 확인했고, 테스트가 만드는 HTML·JavaScript 보고서는 작업 종료 시 제거하도록 했다.

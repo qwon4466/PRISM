@@ -52,3 +52,14 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    reports.html.required.set(false)
+    // AGP still writes an HTML report for Android unit tests; remove that generated JS after the test.
+    doLast {
+        val buildRoot = layout.buildDirectory.get().asFile.canonicalFile.toPath()
+        val report = layout.buildDirectory.dir("reports/tests/$name").get().asFile.canonicalFile.toPath()
+        check(report.startsWith(buildRoot)) { "Test report path escaped the app build directory" }
+        project.delete(report.toFile())
+    }
+}

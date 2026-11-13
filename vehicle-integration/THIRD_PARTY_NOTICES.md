@@ -14,7 +14,7 @@
 | Pleos FusedLocation SDK | `ai.pleos.playground:FusedLocation` | 1.1.3 | 〃 | Gradle 의존성 |
 | Pleos NaviHelper SDK | `ai.pleos.playground:NaviHelper` | 3.0.5 | 〃 | Gradle 의존성 |
 | Pleos TextToSpeech SDK | `ai.pleos.playground:TextToSpeech` | 3.3.1 | 〃 | Gradle 의존성 |
-| Gradle Wrapper | https://github.com/gradle/gradle | 8.13 | Apache-2.0 | `gradlew`, `gradle/wrapper/` |
+| Gradle Wrapper | https://github.com/gradle/gradle | 8.13 | Apache-2.0 | `gradle/wrapper/` |
 
 참고만 하고 코드를 가져오지 않은 저장소:
 

@@ -42,13 +42,13 @@
 저장소는 영문 경로(예: `C:\dev\prism`)에 clone. JDK 17 필요.
 
 ```powershell
-cd vehicle-integration; $env:JAVA_HOME="<JDK 17 경로>"; .\gradlew.bat assembleDebug
+cd vehicle-integration; $env:JAVA_HOME="<JDK 17 경로>"; java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain assembleDebug
 ```
 ```powershell
 adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n com.prism.vehicle.app/.MainActivity
 ```
 ```powershell
-.\gradlew.bat test
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain test
 ```
 
 ## 4. 입력·출력 경로
@@ -57,7 +57,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 |---|---|
 | 입력 (엔진 결과) | `app/src/main/assets/scenarios/<scenario_id>/{scenario_manifest.json, vehicle_frames.jsonl, prediction_frames.jsonl|.json, risk_frames.jsonl|.json}` + `scenarios/index.json` |
 | 출력 (APK) | `app/build/outputs/apk/debug/app-debug.apk` |
-| Mock 생성 | `.\gradlew.bat :replay:generateMockScenarios` → 위 입력 경로에 덮어씀 |
+| Mock 생성 | `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :replay:generateMockScenarios` → 위 입력 경로에 덮어씀 |
 
 ## 5. 통합 주의사항
 
@@ -66,7 +66,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 3. `risk_level` 은 NORMAL/WATCH/WARNING/UNKNOWN 외 값이면 파일 전체를 거부한다. `ttc_s`·`confidence` 는 근거 없으면 null.
 4. 공통 `contracts/` JSON Schema 가 아직 없어 지시서 02장 예시로 DTO 를 만들었다(`replay/src/main/kotlin/.../Contracts.kt`). Schema 가 나오면 대조 필요.
 5. 04 UI: `app/.../ui/EngineRadar.kt` 가 05 프레임을 JSON 으로 04 `ContractJson` 에 넘겨 `RadarScreen` 을 그린다. 01 과의 계약 불일치 2건은 `INTEGRATION_STATUS.md` "엔진 간 통합 결과" 참고.
-9. 엔진 결과 갱신: `.\gradlew.bat :pipeline:run` (03 samples → 01 → assets, 보고서 `tests/reports/pipeline-report.txt`).
+9. 엔진 결과 갱신: `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :pipeline:run` (03 samples → 01 → assets, 보고서 `tests/reports/pipeline-report.txt`).
 6. Mock 은 예측·위험을 계산하지 않는다(실제 미래 위치 복사, 사람이 정한 구간 등급, ttc_s=null). 05번 역할 경계.
 7. 권한: Pleos 앱 심사는 승인된 권한만 허용. 현재 선언 `CAR_POWERTRAIN`(AAOS), `CAR_DRIVE`(브레이크), `FUSED_LOCATION`, `NAVI_ROUTE`, `TTS_SERVICE` — 심사 전 승인 확인.
 8. Pleos 에뮬레이터 UI 테스트는 Gradle 이 아니라 `adb shell am instrument -w -r --user 10 com.prism.vehicle.app.test/androidx.test.runner.AndroidJUnitRunner`.

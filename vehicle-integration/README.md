@@ -6,10 +6,11 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 
 ## 공모전 개발 언어
 
-앱 실행 코드와 시나리오 생성·평가 도구는 Kotlin 또는 Java다. Gradle 설정 파일(`.gradle.kts`)도 Kotlin DSL이다. JSON·XML·WAV는 데이터와 리소스이며, `gradlew.bat`는 Windows에서 Gradle을 시작하는 표준 래퍼다.
+앱 실행 코드와 시나리오 생성·평가 도구는 Kotlin 또는 Java다. Gradle 설정 파일(`.gradle.kts`)도 Kotlin DSL이다. JSON·XML·WAV는 데이터와 리소스이며, `gradle/wrapper/gradle-wrapper.jar`는 Java 기반 Gradle 실행 파일이다. Shell·Batch 스크립트는 포함하지 않는다.
+Gradle 테스트의 HTML 리포트를 비활성화하고 Android Gradle Plugin이 만든 HTML·JavaScript 보고서는 테스트 직후 제거한다. XML 테스트 결과는 유지한다.
 
-- Mock 재생 자료 생성: `.\gradlew.bat :replay:generateMockScenarios`
-- 예측 자료 평가: `.\gradlew.bat :replay:evalPrediction`
+- Mock 재생 자료 생성: `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :replay:generateMockScenarios`
+- 예측 자료 평가: `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :replay:evalPrediction`
 - 알림음 재생성: `java tools/GenerateChime.java` (JDK 17, `vehicle-integration/`에서 실행)
 
 ## 구조
@@ -20,7 +21,7 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 | `adapters/` | Kotlin JVM | `ScenarioDataProvider` · `PredictionDataProvider` · `RiskDataProvider` · `VehicleSdkProvider` 경계, JSON 파일 구현, `ScenarioLoader` |
 | `sdk/` | Android library | `PleosVehicleSdkProvider` — Vehicle(기어) · FusedLocation · NaviHelper · TextToSpeech |
 | `app/` | Android app | Compose UI, 모드 전환, 재생/리플레이, 오류 화면, `assets/scenarios/` |
-| `pipeline/` | Kotlin JVM | 03 `simulation-engine/samples` → 01 `PredictionEngine` → `app/src/main/assets/scenarios/` (`.\gradlew.bat :pipeline:run`) |
+| `pipeline/` | Kotlin JVM | 03 `simulation-engine/samples` → 01 `PredictionEngine` → `app/src/main/assets/scenarios/` (`java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :pipeline:run`) |
 | `libs/` | — | 01 prediction-engine 의 classes.jar (01 자체 빌드 AAR 에서 추출해 고정) |
 | `../visualization-engine` | Android library | 04 레이더·리플레이. 소스를 고치지 않고 `settings.gradle.kts` 에서 모듈로 포함 |
 | `tests/` | — | 오류 케이스 fixture(`fixtures/`), 테스트 결과(`reports/`). Kotlin Mock 생성·평가 도구는 `replay/src/test/kotlin/`에 있음 |
@@ -46,13 +47,13 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 ## 재현 명령 (설치 / 데모 / 테스트)
 
 ```powershell
-$env:JAVA_HOME="$env:USERPROFILE\.jdks\ms-17.0.17"; .\gradlew.bat assembleDebug
+$env:JAVA_HOME="$env:USERPROFILE\.jdks\ms-17.0.17"; java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain assembleDebug
 ```
 ```powershell
-.\gradlew.bat installDebug; adb shell am start -n com.prism.vehicle.app/.MainActivity
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain installDebug; adb shell am start -n com.prism.vehicle.app/.MainActivity
 ```
 ```powershell
-.\gradlew.bat test
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain test
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`
@@ -60,10 +61,10 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 UI 자동 테스트 (에뮬레이터 연결 상태, Simulation Mode 흐름 7개):
 
 ```powershell
-.\gradlew.bat connectedDebugAndroidTest
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain connectedDebugAndroidTest
 ```
 
-빌드가 `... is located outside the root directory ...` 로 실패하면 이전 경로의 빌드 결과가 남은 것이다. `.\gradlew.bat --stop` 후 `adapters\build`, `replay\build` 를 지우고 다시 빌드한다.
+빌드가 `... is located outside the root directory ...` 로 실패하면 이전 경로의 빌드 결과가 남은 것이다. `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --stop` 후 `adapters\build`, `replay\build` 를 지우고 다시 빌드한다.
 
 VS Code: `현대 공모전/.vscode/tasks.json` 에 에뮬레이터 실행 · 빌드 · 설치+실행 · logcat · 단위 테스트 · Mock 재생성 태스크가 있다.
 
@@ -81,12 +82,12 @@ VS Code: `현대 공모전/.vscode/tasks.json` 에 에뮬레이터 실행 · 빌
 - 예측·위험 파일이 없으면 차량만 재생하고 경고를 남긴다. VehicleFrame 이 없으면 재생하지 않는다.
 - 예측·위험은 **같은 timestamp 의 VehicleFrame 좌표계에서만** 그린다. 짝이 없는 프레임은 버리고 경고로 보고한다(다른 시점 좌표를 섞지 않음).
 - 직전 프레임이 `step_ms` 의 2배보다 오래되면 "데이터 누락"으로 표시하고 위험 등급을 UNKNOWN 으로 본다.
-- 03·01: `.\gradlew.bat :pipeline:run` 이 03 의 `samples/` 를 읽어 01 예측을 붙이고 assets 를 다시 만든다. 02 RiskFrame 이 생기면 같은 폴더에 `risk_frames.jsonl` 을 넣으면 된다.
+- 03·01: `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :pipeline:run` 이 03 의 `samples/` 를 읽어 01 예측을 붙이고 assets 를 다시 만든다. 02 RiskFrame 이 생기면 같은 폴더에 `risk_frames.jsonl` 을 넣으면 된다.
 - 04: `app/.../ui/EngineRadar.kt` 에서 04 `RadarScreen` 을 쓴다.
-- 엔진 결과를 넣은 뒤 `.\gradlew.bat test` 를 돌리면 `AssetScenarioIntegrationTest` 가 ID 연결·좌표계·시간 동기화를 다시 검사한다.
+- 엔진 결과를 넣은 뒤 `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain test` 를 돌리면 `AssetScenarioIntegrationTest` 가 ID 연결·좌표계·시간 동기화를 다시 검사한다.
 
 ## Mock 데이터
 
-실제 엔진 시나리오 7종 아래에 `.\gradlew.bat :replay:generateMockScenarios` 로 만든 Mock 6종(`mock_normal`, `mock_rear_approach`, `mock_sudden_brake`, `mock_lane_change`, `mock_chain_reaction`, `mock_dropout`)을 둔다. 02 결과가 없어 위험 표시를 확인할 수 있는 것은 Mock 뿐이다. 각 10초, 100ms 간격, 랜덤 없음. manifest 의 `mock: true` 이면 화면에 **MOCK 데이터** 배지가 뜬다. Mock 은 예측·위험을 **계산하지 않는다**: 예측은 같은 스크립트의 실제 미래 위치를 옮겨 적은 것(`mode: mock_future_truth`), 위험 등급은 시나리오별로 사람이 정한 시간 구간 표, `ttc_s` 는 전부 `null`. 05번 역할 경계(예측·TTC 알고리즘 금지)를 지키기 위해서다. 검증된 위험도가 아니다.
+실제 엔진 시나리오 7종 아래에 `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :replay:generateMockScenarios` 로 만든 Mock 6종(`mock_normal`, `mock_rear_approach`, `mock_sudden_brake`, `mock_lane_change`, `mock_chain_reaction`, `mock_dropout`)을 둔다. 02 결과가 없어 위험 표시를 확인할 수 있는 것은 Mock 뿐이다. 각 10초, 100ms 간격, 랜덤 없음. manifest 의 `mock: true` 이면 화면에 **MOCK 데이터** 배지가 뜬다. Mock 은 예측·위험을 **계산하지 않는다**: 예측은 같은 스크립트의 실제 미래 위치를 옮겨 적은 것(`mode: mock_future_truth`), 위험 등급은 시나리오별로 사람이 정한 시간 구간 표, `ttc_s` 는 전부 `null`. 05번 역할 경계(예측·TTC 알고리즘 금지)를 지키기 위해서다. 검증된 위험도가 아니다.
 
 자세한 상태: `INTEGRATION_STATUS.md`, SDK 지원 여부: `SDK_COMPATIBILITY.md`, 출처·라이선스: `THIRD_PARTY_NOTICES.md`.
