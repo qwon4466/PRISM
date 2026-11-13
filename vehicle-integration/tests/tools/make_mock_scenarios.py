@@ -92,9 +92,11 @@ LANE_W = 3.6
 LAT_TAU = 4.0 / 3.0  # 01 prediction-engine 의 lane_keep 횡방향 모델과 같은 시간상수(laneChangeDurationS/3)
 
 
-def predict(v, a):
+def predict(v, a, target_x=None):
     """MOCK 예측: lane_keep(등속) + 감속 중이면 braking(등가속).
-    횡방향은 현재 횡속도가 LAT_TAU 로 줄어드는 차선 정렬 모델(총 횡이동 한 차선 이내) — 여러 차선을 가로지르지 않는다."""
+    횡방향은 현재 횡속도가 LAT_TAU 로 줄어드는 차선 정렬 모델(총 횡이동 한 차선 이내) — 여러 차선을 가로지르지 않는다.
+    차선 변경 중이면(target_x = 목표 차선 중앙) 그 중앙을 넘어가지 않는다."""
+    lo, hi = (-LANE_W, LANE_W) if target_x is None else sorted((0.0, target_x - v["x"]))
     def pts(acc):
         out = []
         for k in range(1, 6):
@@ -108,8 +110,8 @@ def predict(v, a):
                 dy = v["vy"] * t
                 vy_t = v["vy"]
             raw = v["vx"] * LAT_TAU * (1 - math.exp(-t / LAT_TAU))
-            lat = max(-LANE_W, min(LANE_W, raw))
-            vx_t = 0.0 if abs(raw) >= LANE_W else v["vx"] * math.exp(-t / LAT_TAU)
+            lat = max(lo, min(hi, raw))
+            vx_t = 0.0 if lat != raw else v["vx"] * math.exp(-t / LAT_TAU)
             heading = v["heading_rad"] if v["vx"] == 0 else r3(math.atan2(vy_t, vx_t))
             out.append({"dt_ms": k * 1000, "x": r3(v["x"] + lat), "y": r3(v["y"] + dy), "heading_rad": heading})
         return out
@@ -176,7 +178,7 @@ def run(sid, title, cars, events, cruise=None, drop_frames=(), drop_vehicle=None
         vf.append({"schema_version": "1.0", "timestamp_ms": ts, "coordinate_system": "ego_local_m", "ego_id": "ego", "vehicles": vs})
         others = [(c, v) for c, v in zip(present, vs) if c is not ego]
         pf.append({"schema_version": "1.0", "timestamp_ms": ts,
-                   "predictions": [{"vehicle_id": v["id"], "trajectories": predict(v, c.a)} for c, v in others]})
+                   "predictions": [{"vehicle_id": v["id"], "trajectories": predict(v, c.a, c.lc[2] - ego.x if c.lc else None)} for c, v in others]})
         objs = []
         for c, v in others:
             lead = lead_of(c, cars)

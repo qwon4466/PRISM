@@ -234,7 +234,7 @@
           "reason": "방향지시등 켬 · 목표 차선 앞뒤 간격 확인"
         },
         {
-          "t_ms": 5300,
+          "t_ms": 5660,
           "vehicle_id": "car_31",
           "from_lane": "L3",
           "to_lane": "L2",
@@ -483,7 +483,7 @@
           "note": "car_22 자차 차선 진입 요청(정지한 자차 뒤쪽 · 간격 부족 예상)"
         },
         {
-          "t_ms": 8500,
+          "t_ms": 8000,
           "type": "request_lane_change",
           "vehicle_id": "car_22",
           "value": 1,
@@ -512,7 +512,7 @@
           "reason": "진입 공간 부족: 전방 car_23 간격 1.5 m < 필요 11.6 m"
         },
         {
-          "t_ms": 8500,
+          "t_ms": 8000,
           "vehicle_id": "car_22",
           "from_lane": "L3",
           "to_lane": "L2",
@@ -520,7 +520,7 @@
           "reason": "방향지시등 켬 · 목표 차선 앞뒤 간격 확인"
         },
         {
-          "t_ms": 11760,
+          "t_ms": 11640,
           "vehicle_id": "car_22",
           "from_lane": "L3",
           "to_lane": "L2",

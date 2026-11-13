@@ -12,5 +12,5 @@ vehicles:
   - {id: car_24, lane: 0, x: 90, speed: 15}
 events:
   - {t_s: 5, type: request_lane_change, vehicle: car_22, value: 1, note: car_22 자차 차선 진입 요청(정지한 자차 뒤쪽 · 간격 부족 예상)}
-  - {t_s: 8.5, type: request_lane_change, vehicle: car_22, value: 1, note: car_22 자차 앞쪽으로 다시 진입 요청}
+  - {t_s: 8, type: request_lane_change, vehicle: car_22, value: 1, note: car_22 자차 앞쪽으로 다시 진입 요청}
   - {t_s: 9.5, type: set_target_speed, vehicle: ego, value: 10, note: 자차 재출발}

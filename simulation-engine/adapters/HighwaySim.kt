@@ -61,6 +61,8 @@ private const val MIN_TIME_GAP_S = 0.8
 private const val STOP_SPEED = 0.05
 // PRISM 추가: 안전 확인 차선 변경의 최대 횡속도(m/s). 4 m 차선을 약 3~4초에 옮긴다(강제 change_lane 은 원본 그대로).
 private const val COMFORT_LATERAL_SPEED = 1.2
+// PRISM 추가: 안전 확인 차선 변경의 최대 횡가속도(m/s²). 진입 시작·중단 복귀 때 횡속도가 한 스텝에 뒤집히지 않게 한다.
+private const val COMFORT_LATERAL_ACCEL = 1.5
 
 private fun notZero(x: Double, eps: Double = 1e-2) = if (abs(x) > eps) x else if (x >= 0) eps else -eps
 
@@ -133,7 +135,7 @@ private class Road(laneCount: Int) {
         return front to rear
     }
 
-    fun act() = vehicles.forEach { it.act() }
+    fun act(dt: Double) = vehicles.forEach { it.act(dt) }
 
     fun step(dt: Double) {
         vehicles.forEach { it.step(dt) }
@@ -159,16 +161,17 @@ private class SimVehicle(
     private var checkedChange = false
     private var comfortLateral = false // 안전 확인 차선 변경(또는 그 중단 후 복귀)이 끝나 차선 중앙에 설 때까지
     private var originLane = laneIndex
+    private var lateralCmd = 0.0 // 직전 횡속도 명령(m/s). 안전 확인 차선 변경 중에는 COMFORT_LATERAL_ACCEL 로만 바뀐다
 
     // Vehicle.velocity / direction: slip angle 없이 heading 방향 (IDM 상대속도 계산에 원본 그대로 사용)
     val dirX get() = cos(heading)
     val dirY get() = sin(heading)
 
     /** IDMVehicle.act (MOBIL 자발적 차선변경 꺼짐) + 안전 확인 차선 변경 감시. */
-    fun act() {
+    fun act(dt: Double) {
         if (crashed) return
         monitorLaneChange()
-        steering = steeringControl(targetLane).coerceIn(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE)
+        steering = steeringControl(targetLane, dt).coerceIn(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE)
         var a = idm(road.neighbours(this, laneIndex).first)
         if (laneIndex != targetLane) a = min(a, idm(road.neighbours(this, targetLane).first))
         acceleration = a.coerceIn(-ACC_MAX, ACC_MAX)
@@ -233,11 +236,17 @@ private class SimVehicle(
     }
 
     /** ControlledVehicle.steering_control: 횡위치 P제어 -> 목표 heading -> heading P제어 -> 조향각. */
-    private fun steeringControl(target: Int): Double {
+    private fun steeringControl(target: Int, dt: Double): Double {
         val lateral = road.lanes[target].lateral(y)
-        val lateralSpeedCommand = (-KP_LATERAL * lateral).let {
-            if (comfortLateral) it.coerceIn(-COMFORT_LATERAL_SPEED, COMFORT_LATERAL_SPEED) else it
+        var lateralSpeedCommand = -KP_LATERAL * lateral
+        if (comfortLateral) {
+            // 남은 횡거리 안에 COMFORT_LATERAL_ACCEL 로 멈출 수 있는 속도까지만(목표 차선 중앙을 지나치지 않게), 변화량도 가속도 한도 안에서
+            val limit = min(COMFORT_LATERAL_SPEED, sqrt(2 * COMFORT_LATERAL_ACCEL * abs(lateral)))
+            val dv = COMFORT_LATERAL_ACCEL * dt
+            lateralSpeedCommand = lateralSpeedCommand.coerceIn(-limit, limit).coerceIn(lateralCmd - dv, lateralCmd + dv)
         }
+        // 안전 확인 차선 변경이 아닐 때(원본 그대로)는 실제 횡속도를 기억해 두어, 진입 시작 명령이 거기서부터 바뀌게 한다
+        lateralCmd = if (comfortLateral) lateralSpeedCommand else speed * sin(heading + slipBeta())
         val headingCommand = asin((lateralSpeedCommand / notZero(speed)).coerceIn(-1.0, 1.0))
         val headingRef = 0.0 + headingCommand.coerceIn(-PI / 4, PI / 4) // 직선 차선의 미래 heading = 0
         val headingRateCommand = KP_HEADING * wrapToPi(headingRef - heading)
@@ -349,7 +358,7 @@ fun simulate(sc: Scenario): SimResult {
         for ((id, v) in vehicles) if (v.crashed && crashed.add(id)) collisions += Collision(tMs, id)
         if (k < nSteps) repeat(SUBSTEPS) { j ->
             road.tMs = tMs + j * sc.stepMs / SUBSTEPS
-            road.act(); road.step(dt)
+            road.act(dt); road.step(dt)
         }
     }
     return SimResult(frames, collisions, road.decisions.toList())

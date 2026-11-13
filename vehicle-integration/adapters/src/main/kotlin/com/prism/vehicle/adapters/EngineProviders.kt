@@ -11,6 +11,7 @@ import ai.riskradar.engine02.PrismVehicleFrame
 import ai.riskradar.engine02.RiskObjectV1
 import ai.riskradar.engine02.VerifiedRoadProjection
 import com.prism.prediction.Pose2D
+import com.prism.prediction.PredictionConfig
 import com.prism.prediction.PredictionEngine
 import com.prism.vehicle.replay.Issue
 import com.prism.vehicle.replay.Parsed
@@ -78,7 +79,7 @@ class EnginePredictionProvider(
             val windowPoses = window.map { pose[it.timestampMs] }.takeIf { null !in it }
                 ?.map { Pose2D(it!!.x, it.y, it.headingRad - PI / 2) }
             try {
-                PredictionEngine.predict(window.map { it.toPart01() }, egoPoses = windowPoses).toPart05()
+                PredictionEngine.predict(window.map { it.toPart01() }, PredictionConfig(laneWidthM = EngineRiskProvider.SIM03_LANE_WIDTH_M), egoPoses = windowPoses).toPart05()
             } catch (e: IllegalArgumentException) {
                 issues += Issue(Severity.WARNING, "01@${f.timestampMs}", "예측 실패: ${e.message}")
                 null
@@ -161,7 +162,7 @@ class EngineRiskProvider(
         return RiskFrame(v1.schemaVersion, v1.timestampMs, v1.riskObjects.map { it.toPart05() } + blocked)
     }
 
-    private companion object {
+    internal companion object {
         // shortcut: 03 HighwaySim 의 직선 도로 차선 폭(StraightLane.DEFAULT_WIDTH) 고정값, 03 이 도로 형상을 파일로 내보내면 그 값을 읽도록 교체
         const val SIM03_LANE_WIDTH_M = 4.0
         const val SIM03_ROAD = "sim03-straight-road"

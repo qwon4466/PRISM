@@ -54,6 +54,16 @@ class LaneChangeSafetyTest {
         assertTrue(abs(tr.last().second.d("x")) < 0.3, "원래 차선 중앙으로 복귀하지 않음")
     }
 
+    /** 안전 확인 차선 변경(시작·중단·완료)은 횡속도가 부드럽게 바뀐다: 0.1초에 0.25 m/s 이하(예전 중단 순간은 0.2초에 2.3 m/s 뒤집힘). */
+    @Test fun checkedLaneChanges_haveSmoothLateralSpeed() {
+        for ((name, id) in listOf("lane_change_safe" to "car_31", "lane_change_cancel" to "car_42", "stop_and_go" to "car_22")) {
+            track(name, id).zipWithNext().forEach { (a, b) ->
+                val dvx = abs(b.second.d("vx") - a.second.d("vx"))
+                assertTrue(dvx <= 0.25, "$name $id ${b.first}ms 횡속도 급변 $dvx m/s")
+            }
+        }
+    }
+
     @Test fun stoppedEgo_staysPut_rearVehicleStopsBehind_thenRestart() {
         val r = RESULTS.getValue("stop_and_go")
         val poses = r.poses.map { it.i("timestamp_ms") to it.d("y") } // 자차 월드 전방 위치

@@ -105,6 +105,32 @@ class AssetScenarioIntegrationTest {
         }
     }
 
+    /**
+     * 모든 예측 경로(차선 유지·감속·차선 변경)는 도로를 따라 앞으로 가면서만 옆으로 움직인다:
+     *  - 횡이동 ≤ 한 차선 반(6 m): 차선 중앙에서 조금 벗어난 차량의 한 차선 변경까지 (여러 차선을 가로지르지 않음)
+     *  - 횡이동 ≤ 0.35 × 전진 거리 + 0.5 m (멈추거나 느린 차량의 경로가 옆으로 눕지 않음, 약 19° 이내)
+     */
+    @Test fun noPredictedPathSlidesSideways() {
+        all().forEach { (id, r) ->
+            val t = (r as LoadResult.Ready).timeline
+            t.vehicleFrames.forEach { f ->
+                val byId = f.vehicles.associateBy { it.id }
+                t.snapshotAt(f.timestampMs).prediction?.predictions?.forEach { p ->
+                    val v = byId[p.vehicleId] ?: return@forEach
+                    p.trajectories.forEach { tr ->
+                        tr.points.forEach { pt ->
+                            val lat = abs(pt.x - v.x)
+                            val fwd = pt.y - v.y
+                            val at = "$id@${f.timestampMs} ${p.vehicleId} ${tr.mode} 횡 ${"%.1f".format(lat)} 전진 ${"%.1f".format(fwd)}"
+                            assertTrue(at, lat <= 6.0)
+                            assertTrue(at, lat <= 0.35 * fwd + 0.5)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /** 03 안전 확인 차선 변경 판단(방향지시등·취소·중단)이 앱 이벤트 주석으로 들어온다. */
     @Test fun laneChangeDecisionsAppearAsAnnotations() {
         val labels = (loader.load("sim_lane_change_cancel") as LoadResult.Ready).timeline.manifest.eventAnnotation.map { it.label }
