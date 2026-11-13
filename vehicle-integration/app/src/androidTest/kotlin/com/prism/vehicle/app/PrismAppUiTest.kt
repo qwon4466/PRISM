@@ -39,8 +39,8 @@ class PrismAppUiTest {
 
     @Test fun listsAllScenarios() {
         rule.waitUntil(5_000) { vm.ui.value.scenarioIds.isNotEmpty() }
-        rule.waitUntil(10_000) { runCatching { rule.onNodeWithTag("scenario_normal").fetchSemanticsNode() }.isSuccess } // 첫 실행 시 창이 늦게 붙음
-        listOf("sim_normal", "sim_sudden_braking", "sim_rear_approach", "sim_lane_change", "sim_merge", "sim_chain_reaction", "sim_sensor_dropout", "mock_lane_change", "mock_dropout").forEach {
+        rule.waitUntil(10_000) { runCatching { rule.onNodeWithTag("scenario_sim_normal").fetchSemanticsNode() }.isSuccess } // 첫 실행 시 창이 늦게 붙음
+        listOf("sim_normal", "sim_sudden_braking", "sim_rear_approach", "sim_lane_change", "sim_lane_change_safe", "sim_lane_change_cancel", "sim_stop_and_go", "sim_merge", "sim_chain_reaction", "sim_sensor_dropout", "mock_lane_change", "mock_dropout").forEach {
             rule.onNodeWithTag("scenario_list").performScrollToNode(hasTestTag("scenario_$it")) // 좁은 창에서는 화면 밖 항목이 아직 그려지지 않음
             rule.onNodeWithTag("scenario_$it").assertExists()
         }
@@ -70,7 +70,7 @@ class PrismAppUiTest {
     }
 
     @Test fun everyScenarioOpensWithVehicleAssessment() {
-        rule.waitUntil(5_000) { vm.ui.value.scenarioIds.size == 13 }
+        rule.waitUntil(5_000) { vm.ui.value.scenarioIds.size == 16 }
         val ids = vm.ui.value.scenarioIds.toList()
         ids.forEach { id ->
             rule.runOnUiThread { vm.openScenario(id) }
