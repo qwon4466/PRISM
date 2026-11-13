@@ -1,5 +1,7 @@
 package com.prism.vehicle.app
 
+import android.graphics.Bitmap
+import android.os.SystemClock
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -13,11 +15,13 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 /** Simulation Mode 화면 흐름. SDK 를 호출하지 않으므로 일반 에뮬레이터·Pleos 에뮬레이터 어디서든 돈다. */
 @RunWith(AndroidJUnit4::class)
@@ -62,7 +66,32 @@ class PrismAppUiTest {
         open("mock_lane_change")
         rule.runOnIdle { vm.seek(4_500) }
         rule.waitForIdle()
-        rule.onNodeWithText("WARNING · 주변 차량 위험").assertExists()
+        rule.onNodeWithText("위험 · 주변 차량과 거리 확인").assertExists()
+    }
+
+    @Test fun everyScenarioOpensWithVehicleAssessment() {
+        rule.waitUntil(5_000) { vm.ui.value.scenarioIds.size == 13 }
+        val ids = vm.ui.value.scenarioIds.toList()
+        ids.forEach { id ->
+            rule.runOnUiThread { vm.openScenario(id) }
+            val deadline = SystemClock.elapsedRealtime() + 60_000
+            while ((vm.ui.value.screen == Screen.SELECT || vm.ui.value.loading) && SystemClock.elapsedRealtime() < deadline) {
+                Thread.sleep(100)
+            }
+            assertEquals("$id state=${vm.ui.value.screen}, loading=${vm.ui.value.loading}, issues=${vm.ui.value.issues}",
+                Screen.DRIVE, vm.ui.value.screen)
+            assertTrue("$id assessment missing", vm.ui.value.assessments.isNotEmpty())
+            if (id in setOf("chain_reaction", "lane_change", "sudden_braking", "mock_lane_change")) {
+                rule.runOnUiThread { vm.seek(6_000) }
+                Thread.sleep(400)
+                val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+                val output = File(rule.activity.getExternalFilesDir(null), "prism-$id.png")
+                output.outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                screenshot.recycle()
+            }
+            rule.runOnUiThread { vm.back() }
+            rule.waitUntil(3_000) { vm.ui.value.screen == Screen.SELECT }
+        }
     }
 
     @Test fun replayOnlyAfterParking() {

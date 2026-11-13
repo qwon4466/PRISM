@@ -1,6 +1,8 @@
 package com.prism.vehicle.app
 
 import android.content.pm.PackageManager
+import android.content.pm.ApplicationInfo
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +31,24 @@ class MainActivity : ComponentActivity() {
                 ) locationPermission.launch(FUSED_LOCATION)
             }
             PrismApp(vm)
+        }
+        openDebugScenario(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openDebugScenario(intent)
+    }
+
+    private fun openDebugScenario(intent: Intent?) {
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) return
+        intent?.getStringExtra("scenario_id")?.takeIf { it.isNotBlank() }?.let { id ->
+            vm.openScenario(
+                id,
+                initialPositionMs = intent.getLongExtra("seek_ms", 0L),
+                autoPlay = intent.getBooleanExtra("auto_play", false),
+            )
         }
     }
 

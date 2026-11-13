@@ -29,7 +29,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,15 +46,18 @@ import com.prism.vehicle.app.PrismViewModel
 import com.prism.vehicle.app.Screen
 import com.prism.vehicle.app.UiState
 import com.prism.vehicle.replay.ReplayClock
+import com.prism.vehicle.replay.DemoRiskAnalyzer
+import com.prism.vehicle.replay.RiskFrame
 import com.prism.vehicle.replay.RiskLevel
 import com.prism.vehicle.replay.Severity
 import com.prism.vehicle.replay.Snapshot
+import kotlin.math.roundToInt
 
 @Composable
 fun PrismApp(vm: PrismViewModel) {
     val s by vm.ui.collectAsStateWithLifecycle()
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        Surface(Modifier.fillMaxSize(), color = Color(0xFF0E1013), contentColor = Color(0xFFE8EAED)) {
+    MaterialTheme(colorScheme = lightColorScheme()) {
+        Surface(Modifier.fillMaxSize(), color = Color(0xFFF7FAFD), contentColor = Color(0xFF172536)) {
             Column(Modifier.fillMaxSize().padding(16.dp)) {
                 TopBar(s)
                 Spacer(Modifier.height(12.dp))
@@ -104,7 +107,7 @@ private fun TopBar(s: UiState) {
 
 @Composable
 private fun Badge(text: String, bg: Color) {
-    Text(text, Modifier.background(bg, RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 4.dp), fontSize = 14.sp)
+    Text(text, Modifier.background(bg, RoundedCornerShape(6.dp)).padding(horizontal = 10.dp, vertical = 4.dp), color = Color.White, fontSize = 14.sp)
 }
 
 @Composable
@@ -128,8 +131,8 @@ private fun SelectScreen(s: UiState, vm: PrismViewModel) {
                     Card(
                         onClick = { vm.openScenario(id) },
                         modifier = Modifier.fillMaxWidth().testTag("scenario_$id"),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E232A)),
-                    ) { Text(id, Modifier.padding(16.dp), fontSize = 18.sp) }
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0F7)),
+                    ) { Text("${scenarioName(id)} · $id", Modifier.padding(16.dp), fontSize = 18.sp) }
                 }
             }
             if (s.loading) Text("불러오는 중…")
@@ -137,9 +140,26 @@ private fun SelectScreen(s: UiState, vm: PrismViewModel) {
     })
 }
 
+private fun scenarioName(id: String): String = when (id) {
+    "normal" -> "정상 주행"
+    "lane_change" -> "왼쪽 차량 끼어들기"
+    "merge" -> "오른쪽 차량 합류"
+    "rear_approach" -> "뒤차 급접근"
+    "sudden_braking" -> "앞 화물차 급정거"
+    "chain_reaction" -> "연쇄 급감속"
+    "sensor_dropout" -> "관측 누락"
+    "mock_normal" -> "예시 · 정상 주행"
+    "mock_lane_change" -> "예시 · 끼어들기"
+    "mock_rear_approach" -> "예시 · 뒤차 접근"
+    "mock_sudden_brake" -> "예시 · 급정거"
+    "mock_chain_reaction" -> "예시 · 연쇄 위험"
+    "mock_dropout" -> "예시 · 관측 누락"
+    else -> id
+}
+
 @Composable
 private fun SdkPanel(s: UiState, vm: PrismViewModel, modifier: Modifier) {
-    Column(modifier.background(Color(0xFF161A20), RoundedCornerShape(8.dp)).padding(12.dp)) {
+    Column(modifier.background(Color(0xFFE8F0F7), RoundedCornerShape(8.dp)).padding(12.dp)) {
         Text("Pleos SDK 상태", fontWeight = FontWeight.Bold)
         if (s.mode != AppMode.PLEOS_CONTEXT) Text("Simulation Mode 에서는 SDK 를 호출하지 않습니다", fontSize = 13.sp, color = Color.Gray)
         s.sdk.features.forEach { (f, st) ->
@@ -158,25 +178,32 @@ private fun SdkPanel(s: UiState, vm: PrismViewModel, modifier: Modifier) {
 }
 
 private fun statusColor(st: SupportStatus) = when (st) {
-    SupportStatus.CONFIRMED -> Color(0xFF81C784)
-    SupportStatus.FAILED -> Color(0xFFE57373)
-    SupportStatus.UNSUPPORTED -> Color(0xFFFFB74D)
-    SupportStatus.UNTESTED, SupportStatus.PENDING -> Color.Gray
+    SupportStatus.CONFIRMED -> Color(0xFF196D39)
+    SupportStatus.FAILED -> Color(0xFFB3261E)
+    SupportStatus.UNSUPPORTED -> Color(0xFF8A5B00)
+    SupportStatus.UNTESTED, SupportStatus.PENDING -> Color(0xFF526579)
 }
 
 @Composable
 private fun DriveScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
+    val assessment = s.assessments[snap.vehicle?.timestampMs]
     Adaptive(560.dp, main = { RadarSlot(s, snap, detail = false, modifier = it) }) { sideMod ->
         // 주행 중 화면: 짧고 제한된 안내만. 세부 원인·시간 이동은 정차 후 리플레이로 분리.
         Column(sideMod.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(t.manifest.title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            LevelBanner(snap)
+            LevelBanner(snap, assessment)
+            Text("합성 데이터의 자차 기준 거리 추정 · 실시간 감지 아님", fontSize = 13.sp, color = Color(0xFF526579))
+            VehicleStatusList(snap, assessment)
             Text("%.1f / %.1f s".format(s.clock.positionMs / 1000.0, t.durationMs / 1000.0), fontSize = 16.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PlayPause(s.clock, vm)
                 OutlinedButton(onClick = vm::back) { Text("시나리오 목록") }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = s.voiceAlertsEnabled, onCheckedChange = vm::setVoiceAlertsEnabled)
+                Text("  위험 반복 음성·알림음")
             }
             if (s.mode == AppMode.SIMULATION) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -191,20 +218,49 @@ private fun DriveScreen(s: UiState, vm: PrismViewModel) {
 }
 
 @Composable
-private fun LevelBanner(snap: Snapshot) {
-    val level = snap.topLevel
+private fun LevelBanner(snap: Snapshot, assessment: RiskFrame?) {
+    val level = when {
+        snap.stale -> RiskLevel.UNKNOWN
+        assessment == null -> RiskLevel.UNKNOWN
+        assessment.riskObjects.any { it.riskLevel == RiskLevel.WARNING } -> RiskLevel.WARNING
+        assessment.riskObjects.any { it.riskLevel == RiskLevel.WATCH } -> RiskLevel.WATCH
+        assessment.riskObjects.any { it.riskLevel == RiskLevel.UNKNOWN } -> RiskLevel.UNKNOWN
+        else -> RiskLevel.NORMAL
+    }
     val text = when {
         snap.stale -> "데이터 누락 — 현재 상태 알 수 없음"
-        snap.risk == null -> "위험 정보 없음 (RiskFrame 없음)"
-        level == RiskLevel.WARNING -> "WARNING · 주변 차량 위험"
-        level == RiskLevel.WATCH -> "WATCH · 주의 관찰"
-        level == RiskLevel.UNKNOWN -> "UNKNOWN · 판단 불가"
-        else -> "NORMAL"
+        assessment == null -> "판단 자료 없음"
+        level == RiskLevel.WARNING -> "위험 · 주변 차량과 거리 확인"
+        level == RiskLevel.WATCH -> "주의 · 접근 차량 확인"
+        level == RiskLevel.UNKNOWN -> "판단 보류 · 관측 확인"
+        else -> "보통 · 가까운 위험 없음"
     }
-    val bg = if (level == RiskLevel.UNKNOWN) Color(0xFF263238) else riskColor(level).copy(alpha = 0.35f)
+    val bg = riskColor(level).copy(alpha = 0.14f)
     Box(Modifier.fillMaxWidth().background(bg, RoundedCornerShape(8.dp)).padding(16.dp).testTag("level_banner")) {
-        Text(text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text(text, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = riskColor(level))
     }
+}
+
+@Composable
+private fun VehicleStatusList(snap: Snapshot, assessment: RiskFrame?) {
+    val frame = snap.vehicle ?: return
+    val ego = frame.vehicles.firstOrNull { it.id == frame.egoId } ?: return
+    val byId = assessment?.riskObjects?.associateBy { it.vehicleId }.orEmpty()
+    Text("주변 차량 · 자차와의 추정 간격", fontWeight = FontWeight.Bold)
+    frame.vehicles.filter { it.id != ego.id }
+        .sortedWith(compareByDescending<com.prism.vehicle.replay.VehicleState> {
+            when (byId[it.id]?.riskLevel) { RiskLevel.WARNING -> 3; RiskLevel.WATCH -> 2; RiskLevel.UNKNOWN -> 1; else -> 0 }
+        }.thenBy { DemoRiskAnalyzer.clearanceM(ego, it) })
+        .forEach { car ->
+            val risk = byId[car.id]
+            val level = if (snap.stale) RiskLevel.UNKNOWN else risk?.riskLevel
+            val gap = DemoRiskAnalyzer.clearanceM(ego, car).roundToInt()
+            Row(Modifier.fillMaxWidth().background(riskColor(level).copy(alpha = 0.09f), RoundedCornerShape(6.dp))
+                .padding(horizontal = 10.dp, vertical = 5.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("${car.id} · ${gap}m", fontSize = 15.sp)
+                Text(riskLabel(level), fontSize = 15.sp, color = riskColor(level), fontWeight = FontWeight.Bold)
+            }
+        }
 }
 
 @Composable
@@ -217,10 +273,12 @@ private fun PlayPause(clock: ReplayClock, vm: PrismViewModel) {
 private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
+    val assessment = s.assessments[snap.vehicle?.timestampMs]
     Adaptive(640.dp, main = { RadarSlot(s, snap, detail = true, modifier = it) }) { sideMod ->
         Column(sideMod, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("리플레이 · ${t.manifest.title}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            LevelBanner(snap)
+            LevelBanner(snap, assessment)
+            VehicleStatusList(snap, assessment)
             Slider(
                 value = s.clock.positionMs.toFloat(),
                 onValueChange = { vm.seek(it.toLong()) },
@@ -236,10 +294,10 @@ private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
                 }
                 OutlinedButton(onClick = vm::back) { Text("닫기") }
             }
-            Text("위험 근거 (02 RiskFrame)", fontWeight = FontWeight.Bold)
+            Text("시뮬레이션 거리 기반 추정 · 02 엔진 결과 아님", fontWeight = FontWeight.Bold)
             LazyColumn(Modifier.weight(1f)) {
-                items(snap.risk?.riskObjects.orEmpty()) { o ->
-                    Text("${o.vehicleId}  ${o.riskLevel}  ${o.reasonCodes.joinToString()}  TTC ${o.ttcS?.let { "%.1fs".format(it) } ?: "null"}", fontSize = 14.sp)
+                items(assessment?.riskObjects.orEmpty().filter { it.riskLevel != RiskLevel.NORMAL }) { o ->
+                    Text("${o.vehicleId} · ${riskLabel(o.riskLevel)} · ${o.reasonCodes.joinToString { reasonLabel(it) }} · 접근 시간 ${o.ttcS?.let { "%.1f초".format(it) } ?: "계산 불가"}", fontSize = 14.sp)
                 }
                 item { Spacer(Modifier.height(8.dp)); Text("이벤트 주석 (03 manifest)", fontWeight = FontWeight.Bold) }
                 items(t.manifest.eventAnnotation) { e ->
@@ -250,6 +308,16 @@ private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
             }
         }
     }
+}
+
+private fun reasonLabel(code: String): String = when (code) {
+    "CUT_IN" -> "끼어들기"
+    "SUDDEN_BRAKE" -> "급감속"
+    "FRONT_CLOSING" -> "앞차 접근"
+    "REAR_CLOSING" -> "뒤차 접근"
+    "CLOSE_GAP" -> "간격 감소"
+    "UNRELIABLE_OBSERVATION" -> "관측 불확실"
+    else -> code
 }
 
 @Composable
@@ -266,7 +334,7 @@ private fun ErrorScreen(s: UiState, vm: PrismViewModel) {
 @Composable
 private fun RadarSlot(s: UiState, snap: Snapshot, detail: Boolean, modifier: Modifier) = EngineRadar(
     snapshot = snap,
-    nowMs = s.clock.positionMs,
+    assessment = s.assessments[snap.vehicle?.timestampMs],
     detail = detail,
     laneWidthM = if (s.timeline?.manifest?.mock == true) 3.6f else 4.0f,
     modifier = modifier,
