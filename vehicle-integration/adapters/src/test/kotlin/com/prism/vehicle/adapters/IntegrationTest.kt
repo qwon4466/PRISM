@@ -20,19 +20,19 @@ private fun loaderFor(base: String): Pair<JsonFileProviders, ScenarioLoader> {
 
 /** 앱에 실제로 들어가는 assets 시나리오 전체를 Android 없이 검증한다. */
 class AssetScenarioIntegrationTest {
-    private val pl = loaderFor("../app/src/main/assets")
+    private val pl = engineLoader(FileTextSource(File("../app/src/main/assets"))) // 앱과 같은 로더(파일 + 01·02 엔진)
     private val providers = pl.first
     private val loader = pl.second
 
     private fun all() = providers.scenarioIds().also { assertTrue("index.json 비어 있음", it.isNotEmpty()) }
         .map { id -> id to loader.load(id) }
 
-    private val engineIds = listOf("normal", "sudden_braking", "rear_approach", "lane_change", "merge", "chain_reaction", "sensor_dropout")
+    private val engineIds = listOf("sim_normal", "sim_sudden_braking", "sim_rear_approach", "sim_lane_change", "sim_merge", "sim_chain_reaction", "sim_sensor_dropout")
     private val mockIds = listOf("mock_normal", "mock_rear_approach", "mock_sudden_brake", "mock_lane_change", "mock_chain_reaction", "mock_dropout")
 
     @Test fun indexListsEngineScenariosThenMocks() {
         val ids = providers.scenarioIds()
-        assertEquals("03 실제 엔진 시나리오 7종이 앞에 온다", engineIds.toSet(), ids.take(7).toSet())
+        assertTrue("03 엔진 시나리오(sim_*)가 앞에 온다", ids.take(10).all { it.startsWith("sim_") } && ids.take(10).containsAll(engineIds))
         assertTrue(ids.containsAll(mockIds))
     }
 
@@ -70,14 +70,6 @@ class AssetScenarioIntegrationTest {
     }
 
     /** 02 위험 엔진 결과가 없으므로 실제 엔진 시나리오에는 RiskFrame 이 없고, 그 사실이 경고로 남는다(05 는 위험을 만들지 않는다). */
-    @Test fun engineScenariosHaveNoRiskUntilEngine02Delivers() {
-        engineIds.forEach { id ->
-            val t = (loader.load(id) as LoadResult.Ready).timeline
-            assertEquals(null, t.snapshotAt(1000).risk)
-            assertTrue(t.issues.any { it.severity == Severity.WARNING && "risk_frames" in it.where })
-        }
-    }
-
     @Test fun mockScenariosShareVehicleTimestamps() {
         mockIds.forEach { id ->
             val t = (loader.load(id) as LoadResult.Ready).timeline
@@ -99,6 +91,78 @@ class AssetScenarioIntegrationTest {
         }
     }
 
+    /** 03 시나리오는 예측·위험 파일 없이 01·02 엔진이 계산한다. */
+    @Test fun sim03ScenariosAreComputedByEngines() {
+        val sims = all().filter { it.first.startsWith("sim_") }
+        assertEquals(10, sims.size) // 03 시나리오 7종 + 차선 변경 안전 확인·취소, 정지 후 재출발 3종
+        sims.forEach { (id, r) ->
+            val t = (r as LoadResult.Ready).timeline
+            assertTrue("$id issues=${t.issues}", t.issues.none { it.severity == Severity.WARNING && ("01@" in it.where || "02@" in it.where) })
+            val risks = t.vehicleFrames.mapNotNull { t.snapshotAt(it.timestampMs).risk }.flatMap { it.riskObjects }
+            val levels = risks.groupingBy { it.riskLevel.name }.eachCount()
+            println("$id levels=$levels blocked=${risks.count { "ENGINE02_INPUT_BLOCKED" in it.reasonCodes }}")
+            assertTrue("$id: 02 입력이 막힌 차량이 있음", risks.none { "ENGINE02_INPUT_BLOCKED" in it.reasonCodes })
+            assertTrue("$id: 01 예측 궤적 없음", t.vehicleFrames.any { t.snapshotAt(it.timestampMs).prediction?.predictions?.isNotEmpty() == true })
+        }
+    }
+
+    /**
+     * 03·01·05 연동: 모든 시나리오의 lane_keep 예측이
+     *  - 한 차선 폭(4 m + 여유) 넘게 옆으로 뻗지 않고(여러 차선을 가로지르지 않음)
+     *  - 전방으로 진행 중인 차량을 후진으로 예측하지 않는다.
+     */
+    @Test fun laneKeepPredictionsStayInLaneAndNeverReverse() {
+        all().forEach { (id, r) ->
+            val t = (r as LoadResult.Ready).timeline
+            t.vehicleFrames.forEach { f ->
+                val byId = f.vehicles.associateBy { it.id }
+                t.snapshotAt(f.timestampMs).prediction?.predictions?.forEach { p ->
+                    val v = byId[p.vehicleId] ?: return@forEach
+                    val keep = p.trajectories.firstOrNull { it.mode == "lane_keep" } ?: return@forEach
+                    keep.points.forEach { pt ->
+                        assertTrue("$id@${f.timestampMs} ${p.vehicleId} 횡 ${pt.x - v.x}", abs(pt.x - v.x) <= 4.3)
+                        if (v.vy >= 0) assertTrue("$id@${f.timestampMs} ${p.vehicleId} 후진 예측", pt.y >= v.y - 0.05)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 모든 예측 경로(차선 유지·감속·차선 변경)는 도로를 따라 앞으로 가면서만 옆으로 움직인다:
+     *  - 횡이동 ≤ 한 차선 반(6 m): 차선 중앙에서 조금 벗어난 차량의 한 차선 변경까지 (여러 차선을 가로지르지 않음)
+     *  - 횡이동 ≤ 0.35 × 전진 거리 + 0.5 m (멈추거나 느린 차량의 경로가 옆으로 눕지 않음, 약 19° 이내)
+     */
+    @Test fun noPredictedPathSlidesSideways() {
+        all().forEach { (id, r) ->
+            val t = (r as LoadResult.Ready).timeline
+            t.vehicleFrames.forEach { f ->
+                val byId = f.vehicles.associateBy { it.id }
+                t.snapshotAt(f.timestampMs).prediction?.predictions?.forEach { p ->
+                    val v = byId[p.vehicleId] ?: return@forEach
+                    p.trajectories.forEach { tr ->
+                        tr.points.forEach { pt ->
+                            val lat = abs(pt.x - v.x)
+                            val fwd = pt.y - v.y
+                            val at = "$id@${f.timestampMs} ${p.vehicleId} ${tr.mode} 횡 ${"%.1f".format(lat)} 전진 ${"%.1f".format(fwd)}"
+                            assertTrue(at, lat <= 6.0)
+                            assertTrue(at, lat <= 0.35 * fwd + 0.5)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** 03 안전 확인 차선 변경 판단(방향지시등·취소·중단)이 앱 이벤트 주석으로 들어온다. */
+    @Test fun laneChangeDecisionsAppearAsAnnotations() {
+        val labels = (loader.load("sim_lane_change_cancel") as LoadResult.Ready).timeline.manifest.eventAnnotation.map { it.label }
+        assertTrue(labels.toString(), labels.any { "차선 변경 취소(시작 전)" in it })
+        assertTrue(labels.toString(), labels.any { "차선 변경 중단" in it })
+        val safe = (loader.load("sim_lane_change_safe") as LoadResult.Ready).timeline.manifest.eventAnnotation.map { it.label }
+        assertTrue(safe.toString(), safe.any { "방향지시등 켬" in it } && safe.any { "차선 변경 완료" in it })
+    }
+
     @Test fun mockDropoutHasStaleWindowAndUnknown() {
         val t = (loader.load("mock_dropout") as LoadResult.Ready).timeline
         assertTrue(t.snapshotAt(5000).stale)
@@ -108,14 +172,14 @@ class AssetScenarioIntegrationTest {
 
     /** 03 sensor_dropout: car_01 3~5s 관측 누락 → 그 구간 프레임에 car_01 이 없고 01 도 car_01 을 예측하지 않는다. */
     @Test fun engineSensorDropoutMissingVehicleNotPredicted() {
-        val t = (loader.load("sensor_dropout") as LoadResult.Ready).timeline
+        val t = (loader.load("sim_sensor_dropout") as LoadResult.Ready).timeline
         val s = t.snapshotAt(4000)
         assertTrue(s.vehicle!!.vehicles.none { it.id == "car_01" })
         assertTrue(s.prediction!!.predictions.none { it.vehicleId == "car_01" })
     }
 
     @Test fun replayWalksWholeScenarioMonotonically() {
-        val t = (loader.load("chain_reaction") as LoadResult.Ready).timeline
+        val t = (loader.load("sim_chain_reaction") as LoadResult.Ready).timeline
         var last = -1L
         for (ms in 0..t.durationMs step 33) {
             val ts = t.snapshotAt(ms).vehicle!!.timestampMs

@@ -27,20 +27,20 @@ class DemoRiskTest {
         return risk.values.flatMap { it.riskObjects }.map { it.riskLevel }
     }
 
-    @Test fun allThirteenScenariosHaveCurrentFrameAssessments() {
+    @Test fun allScenariosHaveCurrentFrameAssessments() {
         val ids = source.scenarioIds()
-        assertEquals(13, ids.size)
+        assertEquals(16, ids.size) // 03 엔진(sim_*) 10 + Mock 6
         ids.forEach(::levels)
     }
 
     @Test fun normalTrafficIsNotMislabelledAsDanger() {
-        listOf("normal", "mock_normal").forEach { id ->
+        listOf("sim_normal", "mock_normal").forEach { id ->
             assertTrue("$id has a false warning", RiskLevel.WARNING !in levels(id))
         }
     }
 
     @Test fun brakingCutInAndRearApproachEscalate() {
-        listOf("sudden_braking", "lane_change", "merge", "rear_approach",
+        listOf("sim_sudden_braking", "sim_lane_change", "sim_merge", "sim_rear_approach",
             "mock_sudden_brake", "mock_lane_change", "mock_rear_approach").forEach { id ->
             val observed = levels(id).toSet()
             assertTrue("$id $observed", RiskLevel.WATCH in observed || RiskLevel.WARNING in observed)
@@ -48,8 +48,8 @@ class DemoRiskTest {
     }
 
     @Test fun eventReasonsFollowTheVehicleMotionInEngineScenarios() {
-        mapOf("lane_change" to "CUT_IN", "merge" to "CUT_IN",
-            "sudden_braking" to "SUDDEN_BRAKE", "rear_approach" to "REAR_CLOSING").forEach { (id, reason) ->
+        mapOf("sim_lane_change" to "CUT_IN", "sim_merge" to "CUT_IN",
+            "sim_sudden_braking" to "SUDDEN_BRAKE", "sim_rear_approach" to "REAR_CLOSING").forEach { (id, reason) ->
             val timeline = (loader.load(id) as LoadResult.Ready).timeline
             val objects = DemoRiskAnalyzer.analyze(timeline).values.flatMap { it.riskObjects }
             assertTrue("$id never reports $reason", objects.any {

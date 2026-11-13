@@ -40,7 +40,7 @@ class PrismAppUiTest {
     @Test fun listsAllScenarios() {
         rule.waitUntil(5_000) { vm.ui.value.scenarioIds.isNotEmpty() }
         rule.waitUntil(10_000) { runCatching { rule.onNodeWithTag("scenario_normal").fetchSemanticsNode() }.isSuccess } // 첫 실행 시 창이 늦게 붙음
-        listOf("normal", "sudden_braking", "rear_approach", "lane_change", "merge", "chain_reaction", "sensor_dropout", "mock_lane_change", "mock_dropout").forEach {
+        listOf("sim_normal", "sim_sudden_braking", "sim_rear_approach", "sim_lane_change", "sim_merge", "sim_chain_reaction", "sim_sensor_dropout", "mock_lane_change", "mock_dropout").forEach {
             rule.onNodeWithTag("scenario_list").performScrollToNode(hasTestTag("scenario_$it")) // 좁은 창에서는 화면 밖 항목이 아직 그려지지 않음
             rule.onNodeWithTag("scenario_$it").assertExists()
         }
@@ -48,7 +48,7 @@ class PrismAppUiTest {
     }
 
     @Test fun playAdvancesTimeAndPauses() {
-        open("chain_reaction")
+        open("sim_chain_reaction")
         rule.onNodeWithText("MOCK 데이터").assertDoesNotExist() // 03·01 실제 엔진 결과
         rule.onNodeWithTag("play").performSemanticsAction(SemanticsActions.OnClick) // 차량 홈 TaskView 에서 좌표 터치 주입이 막히는 경우가 있어 semantics 클릭 사용
         rule.waitUntil(5_000) { vm.ui.value.clock.positionMs > 1_000 }
@@ -81,7 +81,7 @@ class PrismAppUiTest {
             assertEquals("$id state=${vm.ui.value.screen}, loading=${vm.ui.value.loading}, issues=${vm.ui.value.issues}",
                 Screen.DRIVE, vm.ui.value.screen)
             assertTrue("$id assessment missing", vm.ui.value.assessments.isNotEmpty())
-            if (id in setOf("chain_reaction", "lane_change", "sudden_braking", "mock_lane_change")) {
+            if (id in setOf("sim_chain_reaction", "sim_lane_change", "sim_sudden_braking", "mock_lane_change")) {
                 rule.runOnUiThread { vm.seek(6_000) }
                 Thread.sleep(400)
                 val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
@@ -95,7 +95,7 @@ class PrismAppUiTest {
     }
 
     @Test fun replayOnlyAfterParking() {
-        open("sudden_braking")
+        open("sim_sudden_braking")
         rule.onNodeWithTag("open_replay").assertIsNotEnabled()
         rule.onNodeWithTag("parked").performScrollTo().performClick()
         rule.onNodeWithTag("open_replay").performScrollTo().assertIsEnabled().performClick()

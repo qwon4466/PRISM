@@ -1,5 +1,7 @@
 package com.prism.vehicle.app.ui
 
+import ai.prism.visualization.rendering.DisplayMode
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -141,13 +143,16 @@ private fun SelectScreen(s: UiState, vm: PrismViewModel) {
 }
 
 private fun scenarioName(id: String): String = when (id) {
-    "normal" -> "정상 주행"
-    "lane_change" -> "왼쪽 차량 끼어들기"
-    "merge" -> "오른쪽 차량 합류"
-    "rear_approach" -> "뒤차 급접근"
-    "sudden_braking" -> "앞 화물차 급정거"
-    "chain_reaction" -> "연쇄 급감속"
-    "sensor_dropout" -> "관측 누락"
+    "sim_normal" -> "정상 주행"
+    "sim_lane_change" -> "왼쪽 차량 끼어들기"
+    "sim_merge" -> "오른쪽 차량 합류"
+    "sim_rear_approach" -> "뒤차 급접근"
+    "sim_sudden_braking" -> "앞 화물차 급정거"
+    "sim_chain_reaction" -> "연쇄 급감속"
+    "sim_sensor_dropout" -> "관측 누락"
+    "sim_lane_change_safe" -> "안전 확인 후 차선 변경"
+    "sim_lane_change_cancel" -> "차선 변경 취소·복귀"
+    "sim_stop_and_go" -> "정체 정지 후 재출발"
     "mock_normal" -> "예시 · 정상 주행"
     "mock_lane_change" -> "예시 · 끼어들기"
     "mock_rear_approach" -> "예시 · 뒤차 접근"
@@ -189,7 +194,7 @@ private fun DriveScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
     val assessment = s.assessments[snap.vehicle?.timestampMs]
-    Adaptive(560.dp, main = { RadarSlot(s, snap, detail = false, modifier = it) }) { sideMod ->
+    Adaptive(560.dp, main = { RadarSlot(t, snap, DisplayMode.DRIVING, it) }) { sideMod ->
         // 주행 중 화면: 짧고 제한된 안내만. 세부 원인·시간 이동은 정차 후 리플레이로 분리.
         Column(sideMod.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(t.manifest.title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -274,7 +279,7 @@ private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
     val t = s.timeline ?: return
     val snap = t.snapshotAt(s.clock.positionMs)
     val assessment = s.assessments[snap.vehicle?.timestampMs]
-    Adaptive(640.dp, main = { RadarSlot(s, snap, detail = true, modifier = it) }) { sideMod ->
+    Adaptive(640.dp, main = { RadarSlot(t, snap, DisplayMode.DETAIL, it) }) { sideMod ->
         Column(sideMod, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("리플레이 · ${t.manifest.title}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             LevelBanner(snap, assessment)
@@ -296,6 +301,7 @@ private fun ReplayScreen(s: UiState, vm: PrismViewModel) {
             }
             Text("시뮬레이션 거리 기반 추정 · 02 엔진 결과 아님", fontWeight = FontWeight.Bold)
             LazyColumn(Modifier.weight(1f)) {
+                item { AnalysisSlot(t, snap, Modifier.fillMaxWidth().height(380.dp)) } // 04 RISK RADAR 2.0 분석 패널
                 items(assessment?.riskObjects.orEmpty().filter { it.riskLevel != RiskLevel.NORMAL }) { o ->
                     Text("${o.vehicleId} · ${riskLabel(o.riskLevel)} · ${o.reasonCodes.joinToString { reasonLabel(it) }} · 접근 시간 ${o.ttcS?.let { "%.1f초".format(it) } ?: "계산 불가"}", fontSize = 14.sp)
                 }
@@ -329,13 +335,3 @@ private fun ErrorScreen(s: UiState, vm: PrismViewModel) {
         Button(onClick = vm::back) { Text("시나리오 목록") }
     }
 }
-
-/** 04 visualization-engine 레이더. 차선 폭: 03 HighwayEnv 시나리오 4.0m, 05 Mock 3.6m. */
-@Composable
-private fun RadarSlot(s: UiState, snap: Snapshot, detail: Boolean, modifier: Modifier) = EngineRadar(
-    snapshot = snap,
-    assessment = s.assessments[snap.vehicle?.timestampMs],
-    detail = detail,
-    laneWidthM = if (s.timeline?.manifest?.mock == true) 3.6f else 4.0f,
-    modifier = modifier,
-)

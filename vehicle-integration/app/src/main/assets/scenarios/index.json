@@ -1,1 +1,1 @@
-["chain_reaction", "lane_change", "merge", "normal", "rear_approach", "sensor_dropout", "sudden_braking", "mock_normal", "mock_rear_approach", "mock_sudden_brake", "mock_lane_change", "mock_chain_reaction", "mock_dropout"]
+["sim_normal","sim_rear_approach","sim_sudden_braking","sim_lane_change","sim_lane_change_safe","sim_lane_change_cancel","sim_merge","sim_chain_reaction","sim_stop_and_go","sim_sensor_dropout","mock_normal","mock_rear_approach","mock_sudden_brake","mock_lane_change","mock_chain_reaction","mock_dropout"]
