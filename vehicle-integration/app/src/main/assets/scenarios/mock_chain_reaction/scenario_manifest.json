@@ -7,18 +7,22 @@
   "ego_id": "ego",
   "event_annotation": [
     {
+      "t_ms": 2000,
+      "label": "truck 급감속 시작 -6.5 m/s²"
+    },
+    {
       "t_ms": 2500,
-      "label": "truck 급감속"
+      "label": "car_00 감속 시작"
     },
     {
-      "t_ms": 3200,
-      "label": "car_01 추종 감속"
+      "t_ms": 3300,
+      "label": "car_01 감속 시작"
     },
     {
-      "t_ms": 4500,
-      "label": "car_03 회피 차선 변경"
+      "t_ms": 4100,
+      "label": "자차 감속 시작"
     }
   ],
-  "provenance": "MOCK: vehicle-integration/tests/tools/make_mock_scenarios.py (03/01/02 엔진 산출물 아님)",
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
   "mock": true
 }

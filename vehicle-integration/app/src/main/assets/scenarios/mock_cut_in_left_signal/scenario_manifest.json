@@ -1,0 +1,20 @@
+{
+  "scenario_id": "mock_cut_in_left_signal",
+  "title": "[MOCK] 좌측 차량 끼어들기 (방향지시등 켬)",
+  "duration_ms": 10000,
+  "step_ms": 100,
+  "seed": 0,
+  "ego_id": "ego",
+  "event_annotation": [
+    {
+      "t_ms": 0,
+      "label": "car_11 좌측 차선, 1.5초 뒤 오른쪽 방향지시등"
+    },
+    {
+      "t_ms": 3000,
+      "label": "car_11 자차 차선으로 이동 시작"
+    }
+  ],
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
+  "mock": true
+}

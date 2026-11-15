@@ -11,10 +11,14 @@
       "label": "car_01 급감속 -7 m/s²"
     },
     {
+      "t_ms": 4200,
+      "label": "자차 감속 시작"
+    },
+    {
       "t_ms": 5500,
       "label": "car_01 감속 종료"
     }
   ],
-  "provenance": "MOCK: vehicle-integration/tests/tools/make_mock_scenarios.py (03/01/02 엔진 산출물 아님)",
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
   "mock": true
 }

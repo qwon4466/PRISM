@@ -12,15 +12,15 @@ android {
         applicationId = "com.prism.vehicle.app"
         minSdk = 28
         targetSdk = 34 // Pleos Connect 에뮬레이터 = Android 14 (API 34)
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // 서명 키는 저장소에 두지 않는다. 서명 없는 release 는 설치 불가 → 시연·제출은 debug APK 사용.
+            // 서명 키는 저장소에 두지 않는다. 제출용 release APK 는 빌드 후 외부 키로 서명한다.
         }
     }
 

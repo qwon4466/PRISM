@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 헤더의 네트워크 종류(Wi-Fi/셀룰러/없음) 표시용. 일반 권한. LTE·5G 세대 구분은 READ_PHONE_STATE(위험 권한)가 필요해 쓰지 않음 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:allowBackup="false"
         android:label="PRISM"

@@ -57,7 +57,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 |---|---|
 | 입력 (엔진 결과) | `app/src/main/assets/scenarios/<scenario_id>/{scenario_manifest.json, vehicle_frames.jsonl, prediction_frames.jsonl|.json, risk_frames.jsonl|.json}` + `scenarios/index.json` |
 | 출력 (APK) | `app/build/outputs/apk/debug/app-debug.apk` |
-| Mock 생성 | `python -I tests/tools/make_mock_scenarios.py` → 위 입력 경로에 덮어씀 |
+| Mock 생성 | `.\gradlew.bat :replay:generateMockScenarios` → 위 입력 경로에 덮어씀 |
 
 ## 5. 통합 주의사항
 

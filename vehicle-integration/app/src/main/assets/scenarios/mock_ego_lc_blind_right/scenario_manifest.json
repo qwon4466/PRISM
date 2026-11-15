@@ -1,0 +1,24 @@
+{
+  "scenario_id": "mock_ego_lc_blind_right",
+  "title": "[MOCK] 자차 우측 차선 변경 · 우측 사각지대 차량",
+  "duration_ms": 10000,
+  "step_ms": 100,
+  "seed": 0,
+  "ego_id": "ego",
+  "event_annotation": [
+    {
+      "t_ms": 2000,
+      "label": "자차 오른쪽 방향지시등 켬"
+    },
+    {
+      "t_ms": 2000,
+      "label": "car_br 우측 사각지대"
+    },
+    {
+      "t_ms": 6000,
+      "label": "사각지대 해소 뒤 자차 우측 차선 이동"
+    }
+  ],
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
+  "mock": true
+}

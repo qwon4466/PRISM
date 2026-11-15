@@ -19,6 +19,6 @@
       "label": "car_02 관측 누락 7.0~8.0s"
     }
   ],
-  "provenance": "MOCK: vehicle-integration/tests/tools/make_mock_scenarios.py (03/01/02 엔진 산출물 아님)",
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
   "mock": true
 }

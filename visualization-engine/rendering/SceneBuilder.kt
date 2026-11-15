@@ -37,8 +37,10 @@ data class SceneVehicle(
     val laneId: String?,
     val causeText: String?,
     val reasonCodes: List<String>,
-    /** 다른 차량 위험의 원인으로 지목된 차량. */
+    /** 자차 위험과 연결된 연쇄 관계에서 위험을 시작한 차량(원인). */
     val isSource: Boolean,
+    /** 데이터 지연·시각 불일치로 위치·위험 정보를 믿을 수 없는 상태(UNKNOWN 과 다르게 회색으로 흐리게 표시). */
+    val stale: Boolean = false,
 )
 
 /** VehicleFrame 에는 없지만 RiskFrame 에 등장하는 차량(예: 센서 누락). 항상 판단 보류로 표시한다. risk_zones 가 없으면 위치를 그리지 않고 상태 줄에만 집계한다. */
@@ -55,7 +57,21 @@ data class SceneTrajectory(
 )
 
 /** RiskFrame risk_zones[] 하나(dtMs 시점 영역, 표시 기준으로 변환된 좌표). */
-data class SceneRegion(val vehicleId: String, val polygon: List<Point2>, val level: DisplayLevel, val dtMs: Long = 0)
+/**
+ * 위험 영역 종류.
+ * - OCCUPANCY: 미래 점유 영역(risk_zones 그대로). 옅은 채움 + 점선.
+ * - CONFLICT : 같은 시점 자차 점유 영역과 겹치는 영역 = 충돌 위험 영역. 진한 채움 + 실선.
+ */
+enum class RegionKind { OCCUPANCY, CONFLICT }
+
+/** RiskFrame risk_zones[] 하나(dtMs 시점 영역, 표시 기준으로 변환된 좌표). */
+data class SceneRegion(
+    val vehicleId: String,
+    val polygon: List<Point2>,
+    val level: DisplayLevel,
+    val dtMs: Long = 0,
+    val kind: RegionKind = RegionKind.OCCUPANCY,
+)
 
 data class SceneRelation(val fromId: String, val toId: String, val level: DisplayLevel)
 
@@ -68,7 +84,15 @@ data class Scene(
     val regions: List<SceneRegion>,
     val relations: List<SceneRelation>,
     val notices: List<SceneNotice>,
+    /** 현재 시각(nowMs) 기준 VehicleFrame 의 나이(ms). nowMs 를 주지 않으면 null. */
+    val dataAgeMs: Long? = null,
+    /** 자차 전방 속도(m/s, VehicleFrame 자차 vy). 값이 없거나 비정상이면 null. 도로 스크롤에만 쓴다. */
+    val egoSpeedMps: Float? = null,
 ) {
+    /** 데이터 지연 또는 RiskFrame 시각 불일치로 위험 표시를 보류 중인지. */
+    val stale: Boolean
+        get() = notices.any { it.kind == NoticeKind.DATA_STALE || it.kind == NoticeKind.RISK_OUT_OF_SYNC }
+
     val highestLevel: DisplayLevel
         get() = (vehicles.filter { !it.isEgo }.map { it.level } +
             ghosts.map { DisplayLevel.UNKNOWN }).maxByOrNull { it.severity } ?: DisplayLevel.NORMAL
@@ -89,15 +113,19 @@ data class Scene(
 
 /**
  * 예측 궤적 표시 기준.
- * - RELATIVE_TO_EGO: 자차가 현재 속도를 유지한다고 보고 자차 이동량을 빼서 "나와의 상대 위치 변화"로 그린다(기본).
- *   자차 고정 화면에서 지면 기준 미래 위치를 그리면 모든 차량이 앞으로 질주하는 것처럼 보여 위험 관계가 읽히지 않는다.
- * - AS_GIVEN: PredictionFrame 좌표를 그대로 그린다.
- * 위험 영역(risk_zones)도 각 dt_ms 에 맞춰 같은 기준으로 변환한다.
+ * - AS_GIVEN(기본): PredictionFrame 좌표(현재 시각 자차 좌표계에 고정된 지면 기준 미래 위치)를 그대로 그린다.
+ *   도로 표식이 자차 주행거리만큼 흐르는 화면([ViewportConfig.scrollRoadWithEgo])과 같은 기준이라
+ *   직진 차량의 경로는 차선을 따라 앞으로, 차선 변경 차량의 경로는 실제 진행 방향으로 그려진다.
+ * - RELATIVE_TO_EGO: 자차 이동량(자차 속도 × dt)을 빼서 "나와의 상대 위치 변화"로 그린다.
+ *   도로를 고정해 그릴 때만 쓴다. 도로가 흐르는 화면에서 쓰면 자차보다 느린 차량의 경로가 진행 방향과 반대(뒤)나
+ *   옆으로 누워 그려져, 차량이 여러 차선을 가로질러 파고드는 것처럼 보인다.
+ * 위험 영역(risk_zones)도 각 dt_ms 에 맞춰 같은 기준으로 변환하고, 충돌 영역 판정은 어느 기준이든
+ * 같은 시점의 자차 위치와 겹치는지로 계산한다(결과 동일).
  */
 enum class TrajectoryReference { RELATIVE_TO_EGO, AS_GIVEN }
 
 data class SceneOptions(
-    val trajectoryReference: TrajectoryReference = TrajectoryReference.RELATIVE_TO_EGO,
+    val trajectoryReference: TrajectoryReference = TrajectoryReference.AS_GIVEN,
     /** VehicleFrame 이 이 시간보다 오래되면 '데이터 지연'으로 보고 위험 강조를 보류한다. */
     val staleAfterMs: Long = 500,
     /** VehicleFrame 과 RiskFrame 시각 차이 허용치. */
@@ -144,16 +172,14 @@ object SceneBuilder {
 
         // 2) 위험 신뢰 가능 여부
         val stale = nowMs != null && nowMs - vehicleFrame.timestampMs > options.staleAfterMs
-        if (stale) notices += SceneNotice(NoticeKind.DATA_STALE, "데이터 지연 · 위험 표시 보류")
+        val dataAgeMs = nowMs?.let { it - vehicleFrame.timestampMs }
+        if (stale) notices += SceneNotice(NoticeKind.DATA_STALE, "데이터 지연 %.1f초 · 위험 표시 보류".format((dataAgeMs ?: 0L) / 1000f))
         val outOfSync = riskFrame != null && abs(riskFrame.timestampMs - vehicleFrame.timestampMs) > options.riskSyncToleranceMs
         if (outOfSync) notices += SceneNotice(NoticeKind.RISK_OUT_OF_SYNC, "위험 정보 시각 불일치 · 판단 보류")
         if (riskFrame == null) notices += SceneNotice(NoticeKind.NO_RISK_DATA, "위험 정보 없음")
         val trustRisk = !stale && !outOfSync
 
         val risks: Map<String, VehicleRisk> = riskFrame?.risks?.associateBy { it.vehicleId }.orEmpty()
-        val sources = risks.values
-            .filter { it.level == RiskLevel.WATCH || it.level == RiskLevel.WARNING }
-            .flatMap { it.sourceVehicleIds }.toSet()
 
         fun displayOf(r: VehicleRisk?): DisplayLevel {
             if (r == null) return DisplayLevel.NORMAL
@@ -176,7 +202,8 @@ object SceneBuilder {
                 level = lv, reportedLevel = r?.level, laneId = v.laneId,
                 causeText = r?.let { if (lv == DisplayLevel.NORMAL) null else CauseCatalog.describe(it) },
                 reasonCodes = r?.reasonCodes.orEmpty(),
-                isSource = trustRisk && v.id in sources,
+                isSource = false, // 관계(relations)가 정해진 뒤 아래에서 지정
+                stale = !trustRisk && !isEgo,
             )
         }.let { list -> if (list.none { it.isEgo }) list + defaultEgo(egoId) else list }
 
@@ -206,8 +233,23 @@ object SceneBuilder {
         val levelById = sceneVehicles.associate { it.id to it.level }
 
         // 4) 위험 영역
-        val regions = risks.values.filter { it.vehicleId in emphasized }
-            .flatMap { r -> r.riskZones.sortedBy { it.dtMs }.map { z -> SceneRegion(r.vehicleId, shiftZone(z), levelById.getValue(r.vehicleId), z.dtMs) } }
+        // 자차의 같은 시점 위치(표시 좌표): 상대 운동 표시면 항상 원점, 지면 표시면 자차 속도 × dt
+        val egoLen = egoState?.lengthM ?: 4.6f
+        val egoWid = egoState?.widthM ?: 1.9f
+        val (trueVx, trueVy) = if (egoState != null && egoState.vx.isFinite() && egoState.vy.isFinite()) egoState.vx to egoState.vy else 0f to 0f
+        fun egoFootprint(dtMs: Long): List<Point2> {
+            val s = dtMs / 1000f
+            val c = Point2((trueVx - egoVx) * s, (trueVy - egoVy) * s)
+            return VehicleGeometry.corners(c.x, c.y, egoState?.headingRad ?: (Math.PI / 2).toFloat(), egoLen + 0.6f, egoWid + 0.3f)
+        }
+        val regions = if (!trustRisk) emptyList() else risks.values.filter { it.vehicleId in emphasized }
+            .flatMap { r ->
+                r.riskZones.sortedBy { it.dtMs }.map { z ->
+                    val poly = shiftZone(z)
+                    val kind = if (ConvexOverlap.overlaps(poly, egoFootprint(z.dtMs))) RegionKind.CONFLICT else RegionKind.OCCUPANCY
+                    SceneRegion(r.vehicleId, poly, levelById.getValue(r.vehicleId), z.dtMs, kind)
+                }
+            }
 
         // 5) 궤적
         if (predictionFrame == null && mode == DisplayMode.DETAIL) {
@@ -244,7 +286,11 @@ object SceneBuilder {
             .filter { it.vehicleId in emphasized }
             .flatMap { r -> r.sourceVehicleIds.filter { it in present }.map { s -> SceneRelation(s, r.vehicleId, levelById.getValue(r.vehicleId)) } }
 
-        return Scene(vehicleFrame.timestampMs, mode, sceneVehicles, ghosts, trajectories, regions, relations, notices)
+        // 원인 차량 표시는 자차 위험(강조 대상)과 실제로 연결된 관계의 시작 차량에만
+        val sourceIds = relations.map { it.fromId }.toSet()
+        val finalVehicles = if (sourceIds.isEmpty()) sceneVehicles else sceneVehicles.map { if (it.id in sourceIds) it.copy(isSource = true) else it }
+        val egoSpeed = egoState?.vy?.takeIf { it.isFinite() }
+        return Scene(vehicleFrame.timestampMs, mode, finalVehicles, ghosts, trajectories, regions, relations, notices, dataAgeMs, egoSpeed)
     }
 
     private fun defaultEgo(id: String = "ego"): SceneVehicle {
