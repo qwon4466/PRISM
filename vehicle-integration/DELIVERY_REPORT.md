@@ -2,7 +2,7 @@
 
 ## 2026-11-15 제출 갱신
 
-아래의 기존 기능·테스트 표는 2026-11-10 인계 시점 기록이다. 현재 제출 버전은 **PRISM 0.3.0**이며, 제출 저장소 `qwon4466/PRISM_integreation`에 소스와 [`../apk/PRISM_PRISM_release.apk`](../apk/PRISM_PRISM_release.apk)를 함께 배치했다. 광학 프리즘 모양의 적응형 앱 아이콘을 포함한 release APK를 별도 키로 서명했다. 크기 44,651,554바이트, SHA-256 `50AC22A7D820FB410828424B38DAF140EBDFD40681DDD2E5DF732F3D6DF64CE6`.
+아래의 기존 기능·테스트 표는 2026-11-10 인계 시점 기록이다. 현재 제출 버전은 **PRISM 0.3.0**이며, 저장소에 소스와 [`../apk/PRISM_PRISM_release.apk`](../apk/PRISM_PRISM_release.apk)를 함께 배치했다. 광학 프리즘 모양의 적응형 앱 아이콘을 포함한 release APK를 별도 키로 서명했다. 크기 44,651,554바이트, SHA-256 `50AC22A7D820FB410828424B38DAF140EBDFD40681DDD2E5DF732F3D6DF64CE6`.
 
 `gradlew :app:assembleRelease test`, APK v3 서명 검증, zipalign 검증에 통과했다. Android 16 에뮬레이터에서 설치·시나리오 화면을, Pleos Connect v2.1.0(2560×1440)에서 설치·차량 홈의 시나리오 목록 표시를 확인했다. release 키와 암호는 저장소 밖에 보관한다.
 
