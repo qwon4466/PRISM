@@ -39,7 +39,7 @@ PRISM 4개 독립 엔진의 결과(JSON)를 하나의 Android 차량용 앱에�
 
 - JDK 17 이상. 빌드 도구는 04 와 같다: Gradle 9.6.0, AGP 9.5.1(내장 Kotlin), Kotlin 2.2.10, Compose BOM 2026.02.01, 앱 compileSdk 37.
 - 팀 저장소 전체를 clone 해야 한다(`../visualization-engine`, `../simulation-engine` 을 형제 폴더로 읽는다).
-- Android SDK Platform 35, `ANDROID_HOME` 설정
+- Android SDK Platform 37, `ANDROID_HOME` 설정
 - Pleos SDK 확인용: AVD `Pleos_Connect_v2.1.0` (Android 14, pleos_car_emulator)
 - **Gradle 은 영문 경로에서 실행한다.** 한글 경로(`바탕 화면\과제\현대 공모전`)에서는 JVM 테스트가 `ClassNotFoundException` 으로 실패한다(Windows 비유니코드 코드페이지 문제). 저장소는 `C:\dev\prism` 에 둔다. 계획서 규칙(클라우드 드라이브에 `.git` 동기화 금지)에 따라 OneDrive·Google Drive 폴더 안에 clone 하지 않는다. `android.overridePathCheck=true` 는 다른 팀원이 한글 경로에서 열 때 AGP 경로 검사로 막히지 않게 남겨 둔다.
 
