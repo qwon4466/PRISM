@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108" role="img" aria-label="PRISM app icon: light split by a prism">
+  <rect width="108" height="108" rx="24" fill="#11182F"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M18 50h21" stroke="#CBE9FF" stroke-width="3.5"/>
+    <path d="M68 51 90 31" stroke="#61D7FF" stroke-width="4.5"/>
+    <path d="M70 53 92 46" stroke="#8C94FF" stroke-width="4.5"/>
+    <path d="M70 56 92 61" stroke="#F47BC0" stroke-width="4.5"/>
+    <path d="M68 58 89 77" stroke="#FFC36F" stroke-width="4.5"/>
+  </g>
+  <path d="M37 27 70 54 37 81Z" fill="#30466B" stroke="#F4F8FF" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="m37 50 18 4-18 5" fill="none" stroke="#BDE9FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

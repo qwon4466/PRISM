@@ -1,5 +1,7 @@
 # PRISM
 
+![PRISM 앱 아이콘](docs/prism-app-icon.svg)
+
 **PRISM**은 교통 시뮬레이션의 차량 위치, 예측 궤적, 위험 등급을 Pleos 차량 화면에서 재생하는 Android 앱입니다. 기본 Simulation Mode는 저장된 데이터를 사용하며, 실시간 주변 차량 감지나 제동·조향 기능은 제공하지 않습니다.
 
 ## 실행 방법
@@ -10,6 +12,8 @@
    adb install -r apk/PRISM_PRISM_release.apk
    ```
 3. 런처에서 **PRISM**을 열고 기본 **Simulation Mode**에서 시나리오를 선택해 재생합니다. Pleos 에뮬레이터에서는 차량 홈의 PRISM 아이콘을 통해 앱 화면을 엽니다.
+
+기존 debug APK가 설치되어 서명이 다르다는 오류(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`)가 나오면 `adb uninstall com.prism.vehicle.app` 후 release APK를 다시 설치합니다. 제거하면 기존 앱 데이터가 삭제됩니다.
 
 ## 테스트 환경과 필요한 설정
 
