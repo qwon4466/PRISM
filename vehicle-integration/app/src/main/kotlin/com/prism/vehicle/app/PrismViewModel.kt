@@ -17,7 +17,6 @@ import com.prism.vehicle.replay.Issue
 import com.prism.vehicle.replay.DemoRiskAnalyzer
 import com.prism.vehicle.replay.ReplayClock
 import com.prism.vehicle.replay.RiskFrame
-import com.prism.vehicle.replay.RiskLevel
 import com.prism.vehicle.replay.ScenarioTimeline
 import com.prism.vehicle.sdk.PleosVehicleSdkProvider
 import kotlinx.coroutines.Dispatchers
@@ -83,7 +82,7 @@ class PrismViewModel(app: Application) : AndroidViewModel(app) {
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     private var ticker: Job? = null
-    private var lastWarningId: String? = null
+    private val riskAudioAlerts = RiskAudioAlertPolicy()
     private var foreground = false
 
     init {
@@ -122,7 +121,7 @@ class PrismViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
             }
-            lastWarningId = null
+            riskAudioAlerts.reset()
             if (result is LoadResult.Ready && autoPlay) play()
         }
     }
@@ -156,7 +155,7 @@ class PrismViewModel(app: Application) : AndroidViewModel(app) {
                 val now = SystemClock.elapsedRealtime()
                 _ui.update { it.copy(clock = it.clock.advance(now - last)) }
                 last = now
-                announceWarningIfNeeded()
+                announceRiskIfNeeded()
             }
         }
     }
@@ -171,35 +170,23 @@ class PrismViewModel(app: Application) : AndroidViewModel(app) {
     fun setSpeed(s: Float) = _ui.update { it.copy(clock = it.clock.withSpeed(s)) }
     fun setVoiceAlertsEnabled(enabled: Boolean) {
         _ui.update { it.copy(voiceAlertsEnabled = enabled) }
-        if (!enabled) warningAudio.stop()
+        if (!enabled) {
+            warningAudio.stop()
+            riskAudioAlerts.reset()
+        }
     }
-    fun speakTest() = warningAudio.announce("PRISM 시뮬레이션 음성 안내 테스트입니다", pleos, chime = false)
+    fun speakTest() {
+        warningAudio.announce("PRISM 시뮬레이션 음성 안내 테스트입니다", pleos, chime = false)
+    }
 
-    /**
-     * 위험(WARNING) 한 건당 한 번만 안내한다. 같은 차량의 경고가 이어지는 동안은 반복하지 않고,
-     * 경고가 풀렸다가 다시 생기거나 다른 차량이 경고 대상이 되면 다시 안내한다(등급 해제는 분석기 히스테리시스로 안정화됨).
-     */
-    private fun announceWarningIfNeeded() {
+    /** WATCH와 WARNING 진입 시 알림음과 음성을 한 번씩 안내한다. */
+    private fun announceRiskIfNeeded() {
         val s = _ui.value
         if (!foreground || !s.voiceAlertsEnabled || s.screen != Screen.DRIVE) return
         val snap = s.timeline?.snapshotAt(s.clock.positionMs) ?: return
-        if (snap.stale) { lastWarningId = null; return }
-        val warning = s.assessments[snap.vehicle?.timestampMs]?.riskObjects
-            ?.firstOrNull { it.riskLevel == RiskLevel.WARNING }
-        if (warning == null) { lastWarningId = null; return }
-        if (warning.vehicleId == lastWarningId) return
-        val r = warning.reasonCodes
-        val situation = when {
-            "OVERLAP" in r -> "주변 차량과 겹쳐 보입니다. 확인하세요."
-            "LANE_CHANGE_CONFLICT" in r -> "사각지대에 차량이 있습니다. 차선 변경을 멈추세요."
-            "CUT_IN" in r || "LANE_INTRUSION" in r -> "주변 차량이 내 차 앞으로 끼어들고 있습니다."
-            "CHAIN_DECEL" in r -> "앞쪽 차량들이 연쇄 감속 중입니다."
-            "SUDDEN_BRAKE" in r -> "앞 차량이 급정거했습니다."
-            "REAR_CLOSING" in r -> "뒤 차량이 가까워지고 있습니다."
-            else -> "앞 차량과의 거리가 위험하게 가까워졌습니다."
-        }
-        warningAudio.announce("시뮬레이션 경고. $situation", if (s.mode == AppMode.PLEOS_CONTEXT) pleos else null)
-        lastWarningId = warning.vehicleId
+        if (snap.stale) { riskAudioAlerts.reset(); return }
+        val message = riskAudioAlerts.next(s.assessments[snap.vehicle?.timestampMs]?.riskObjects) ?: return
+        warningAudio.announce(message, if (s.mode == AppMode.PLEOS_CONTEXT) pleos else null)
     }
 
     /** Activity onStart/onStop 에 맞춰 SDK 세션을 열고 닫는다(백그라운드에서 리스너가 남지 않게). */
