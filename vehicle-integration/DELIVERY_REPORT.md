@@ -29,7 +29,7 @@
 | 04 UI 라이브러리 연결 | DONE | 04 `RadarScreen` (모듈 포함) |
 | 03→01 실제 결과 통합 | DONE | `pipeline/`: 03 시나리오 7종 × 01 예측 847프레임 |
 | 02 위험 결과 통합 | BLOCKED | 02 는 RiskFrame 생성기가 아닌 연구 스냅샷 → 위험 정보 없이 재생, Mock(`mock_*`)만 위험 표시 |
-| Release APK / GitHub Releases | PARTIAL | Debug APK 만. 서명 키는 저장소에 두지 않음 → 팀장 서명 필요 |
+| Release APK / GitHub 제출 | DONE (2026-11-15) | 서명된 `../apk/PRISM_PRISM_release.apk`를 소스와 함께 `apk/`에 업로드. GitHub Releases는 파일 크기상 불필요 |
 | 실차 | BLOCKED | VEHICLE-VERIFIED 아님 |
 
 ## 2. 테스트 (실제 실행 결과)
@@ -62,7 +62,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 | 구분 | 경로 |
 |---|---|
 | 입력 (엔진 결과) | `app/src/main/assets/scenarios/<scenario_id>/{scenario_manifest.json, vehicle_frames.jsonl, prediction_frames.jsonl|.json, risk_frames.jsonl|.json}` + `scenarios/index.json` |
-| 출력 (APK) | `app/build/outputs/apk/debug/app-debug.apk` |
+| 출력 (제출 APK) | `../apk/PRISM_PRISM_release.apk` |
 | Mock 생성 | `.\gradlew.bat :replay:generateMockScenarios` → 위 입력 경로에 덮어씀 |
 
 ## 5. 통합 주의사항

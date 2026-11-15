@@ -1,5 +1,7 @@
 # INTEGRATION_STATUS — PART 05 vehicle-integration
 
+2026-11-15 제출 갱신: 적응형 프리즘 아이콘을 포함한 서명된 release APK를 `../apk/PRISM_PRISM_release.apk`에 배치했다. 아래 엔진 통합 및 SDK 검증 기록은 별도 표기된 기준일의 결과다.
+
 기준: 2026-11-10, 브랜치 `feature/vehicle`. 상태 표기는 지시서 기준(DESIGNED / IMPLEMENTED / TESTED / INTEGRATED / VEHICLE-VERIFIED).
 
 ## 엔진 간 통합 결과 (2026-11-12)
@@ -33,7 +35,7 @@
 | Debug APK | `app/build/outputs/apk/debug/app-debug.apk` (약 47MB) |
 | 에뮬레이터 설치 | **성공** (`adb install -r`, Pleos_Connect_v2.1.0) |
 | 에뮬레이터 실행·화면 동작 | **성공** — 스크린샷 `tests/reports/screenshots/` |
-| Release APK | **미생성**. 서명 키를 저장소에 두지 않으므로 서명 없는 release 는 설치 불가. 제출·시연은 Debug APK 사용, Release 는 팀장이 서명 키로 별도 빌드 |
+| Release APK | **생성·서명 완료 (2026-11-15)**. 설치 가능한 APK는 `../apk/PRISM_PRISM_release.apk`; 키는 저장소 밖에 보관 |
 
 빌드 환경: Windows 11, JDK 17 (`ms-17.0.17`), Gradle 9.6.0, AGP 9.5.1(내장 Kotlin), Kotlin 2.2.10, 앱 compileSdk 37, minSdk 28, targetSdk 34. 저장소 위치 `C:\dev\prism` (영문 경로, 클라우드 동기화 폴더 밖).
 
