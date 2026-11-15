@@ -220,7 +220,7 @@ private fun DriveScreen(s: UiState, vm: PrismViewModel) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(checked = s.voiceAlertsEnabled, onCheckedChange = vm::setVoiceAlertsEnabled)
-                Text("  위험 음성·알림음 (경고마다 1회)")
+                Text("  위험 음성·알림음 (주의·경고마다 1회)")
             }
             if (s.mode == AppMode.SIMULATION) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

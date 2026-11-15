@@ -1625,7 +1625,7 @@ private fun SettingsCard(s: UiState, vm: PrismViewModel) {
     Column(Modifier.fillMaxWidth().card().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("⚙ 설정", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NAVY)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("위험 음성·알림음 (경고마다 1회)", fontSize = 15.sp, color = NAVY, modifier = Modifier.weight(1f))
+            Text("위험 음성·알림음 (주의·경고마다 1회)", fontSize = 15.sp, color = NAVY, modifier = Modifier.weight(1f))
             Switch(s.voiceAlertsEnabled, vm::setVoiceAlertsEnabled, colors = sw)
         }
         if (s.mode == AppMode.SIMULATION) Row(verticalAlignment = Alignment.CenterVertically) {
