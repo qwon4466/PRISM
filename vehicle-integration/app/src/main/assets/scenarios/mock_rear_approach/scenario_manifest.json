@@ -8,13 +8,21 @@
   "event_annotation": [
     {
       "t_ms": 0,
-      "label": "후방 car_r 36 m/s 로 접근"
+      "label": "후방 car_r 33 m/s 로 접근"
     },
     {
-      "t_ms": 6500,
-      "label": "car_r 좌측 차선으로 회피"
+      "t_ms": 3000,
+      "label": "car_r 좌측 차선으로 추월 시작"
+    },
+    {
+      "t_ms": 5000,
+      "label": "car_r 자차 좌측 통과"
+    },
+    {
+      "t_ms": 6000,
+      "label": "car_r 좌측 전방으로 이동"
     }
   ],
-  "provenance": "MOCK: vehicle-integration/tests/tools/make_mock_scenarios.py (03/01/02 엔진 산출물 아님)",
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
   "mock": true
 }

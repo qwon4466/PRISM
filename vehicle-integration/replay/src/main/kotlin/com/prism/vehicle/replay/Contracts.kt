@@ -32,6 +32,11 @@ data class VehicleState(
     @SerialName("length_m") val lengthM: Double,
     @SerialName("width_m") val widthM: Double,
     @SerialName("lane_id") val laneId: String? = null,
+    /**
+     * 방향지시등 (v1 확장, 선택). OFF/LEFT/RIGHT/HAZARD — 차량 자신의 진행 방향 기준 좌우.
+     * 없으면(null) 03 엔진·실차 데이터가 이 값을 주지 않는 것이므로 "확인되지 않음"으로 다루고 만들어내지 않는다.
+     */
+    val indicator: String? = null,
 )
 
 @Serializable

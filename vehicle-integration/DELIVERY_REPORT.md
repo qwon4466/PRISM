@@ -1,5 +1,11 @@
 # DELIVERY_REPORT — PART 05 vehicle-integration
 
+## 2026-11-15 제출 갱신
+
+아래의 기존 기능·테스트 표는 2026-11-10 인계 시점 기록이다. 현재 제출 버전은 **PRISM 0.3.0**이며, 저장소에 소스와 [`../apk/PRISM_PRISM_release.apk`](../apk/PRISM_PRISM_release.apk)를 함께 배치했다. 광학 프리즘 모양의 적응형 앱 아이콘을 포함한 release APK를 별도 키로 서명했다. 크기 44,651,554바이트, SHA-256 `50AC22A7D820FB410828424B38DAF140EBDFD40681DDD2E5DF732F3D6DF64CE6`.
+
+`gradlew :app:assembleRelease test`, APK v3 서명 검증, zipalign 검증에 통과했다. Android 16 에뮬레이터에서 설치·시나리오 화면을, Pleos Connect v2.1.0(2560×1440)에서 설치·차량 홈의 시나리오 목록 표시를 확인했다. release 키와 암호는 저장소 밖에 보관한다.
+
 - 담당: PART 05 Android/Pleos SDK 통합 (`vehicle-integration/`)
 - 공유 저장소: https://github.com/qwon4466/PRISM · 브랜치 `feature/vehicle` → `main` PR #2
 - 인계 기준 버전: 태그 `vehicle-integration-v0.1.0`. 공유 저장소에 5개 엔진이 같이 있어 계획서의 `v0.1.0` 앞에 폴더 이름을 붙였다
@@ -23,7 +29,7 @@
 | 04 UI 라이브러리 연결 | DONE | 04 `RadarScreen` (모듈 포함) |
 | 03→01 실제 결과 통합 | DONE | `pipeline/`: 03 시나리오 7종 × 01 예측 847프레임 |
 | 02 위험 결과 통합 | BLOCKED | 02 는 RiskFrame 생성기가 아닌 연구 스냅샷 → 위험 정보 없이 재생, Mock(`mock_*`)만 위험 표시 |
-| Release APK / GitHub Releases | PARTIAL | Debug APK 만. 서명 키는 저장소에 두지 않음 → 팀장 서명 필요 |
+| Release APK / GitHub 제출 | DONE (2026-11-15) | 서명된 `../apk/PRISM_PRISM_release.apk`를 소스와 함께 `apk/`에 업로드. GitHub Releases는 파일 크기상 불필요 |
 | 실차 | BLOCKED | VEHICLE-VERIFIED 아님 |
 
 ## 2. 테스트 (실제 실행 결과)
@@ -56,8 +62,8 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk; adb shell am start -n 
 | 구분 | 경로 |
 |---|---|
 | 입력 (엔진 결과) | `app/src/main/assets/scenarios/<scenario_id>/{scenario_manifest.json, vehicle_frames.jsonl, prediction_frames.jsonl|.json, risk_frames.jsonl|.json}` + `scenarios/index.json` |
-| 출력 (APK) | `app/build/outputs/apk/debug/app-debug.apk` |
-| Mock 생성 | `python -I tests/tools/make_mock_scenarios.py` → 위 입력 경로에 덮어씀 |
+| 출력 (제출 APK) | `../apk/PRISM_PRISM_release.apk` |
+| Mock 생성 | `.\gradlew.bat :replay:generateMockScenarios` → 위 입력 경로에 덮어씀 |
 
 ## 5. 통합 주의사항
 

@@ -61,11 +61,13 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
     private fun fail(f: SdkFeature, e: Throwable) =
         mark(f, SupportStatus.FAILED, "${e.javaClass.simpleName}: ${e.message}")
 
-    // 같은 인스턴스로 register/unregister 해야 한다.
-    private val gearCallback = object : CarPropertyManager.CarPropertyEventCallback {
-        override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
-        override fun onErrorEvent(propId: Int, areaId: Int) =
-            mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
+    // 같은 인스턴스로 register/unregister 한다. 일반 Android 에는 android.car 가 없으므로 SDK 시작 전에는 생성하지 않는다.
+    private val gearCallback by lazy {
+        object : CarPropertyManager.CarPropertyEventCallback {
+            override fun onChangeEvent(value: CarPropertyValue<*>) = onGear(value.value as? Int)
+            override fun onErrorEvent(propId: Int, areaId: Int) =
+                mark(SdkFeature.GEAR, SupportStatus.FAILED, "GEAR_SELECTION onErrorEvent area=$areaId")
+        }
     }
 
     private val brakeListener = object : BrakePedalStatusListener {
@@ -205,6 +207,7 @@ class PleosVehicleSdkProvider(context: Context) : VehicleSdkProvider {
             tts = t
             t.initialize(object : OnInitializeListener {
                 override fun onSuccess() {
+                    runCatching { t.setAudioAttributes(PleosWarningSpeech.GUIDANCE) } // 내비 안내 볼륨 그룹
                     ttsReady = true
                     mark(SdkFeature.TEXT_TO_SPEECH, SupportStatus.CONFIRMED, "ON_DEVICE initialize 성공")
                 }

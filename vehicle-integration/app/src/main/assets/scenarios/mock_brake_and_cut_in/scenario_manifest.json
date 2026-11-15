@@ -1,0 +1,24 @@
+{
+  "scenario_id": "mock_brake_and_cut_in",
+  "title": "[MOCK] 전방 급제동 + 우측 끼어들기 동시",
+  "duration_ms": 10000,
+  "step_ms": 100,
+  "seed": 0,
+  "ego_id": "ego",
+  "event_annotation": [
+    {
+      "t_ms": 3000,
+      "label": "car_01 급감속"
+    },
+    {
+      "t_ms": 3200,
+      "label": "car_02 자차 차선으로 끼어들기"
+    },
+    {
+      "t_ms": 4200,
+      "label": "자차 감속 시작"
+    }
+  ],
+  "provenance": "MOCK: vehicle-integration/replay/src/test/kotlin/com/prism/vehicle/replay/tools/MockScenarioGenerator.kt (03/01/02 엔진 산출물 아님)",
+  "mock": true
+}
